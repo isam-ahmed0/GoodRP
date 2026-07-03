@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>..\app.manifest</ApplicationManifest>
+    <AssemblyName>GoodRP</AssemblyName>
+    <RootNamespace>GoodRP</RootNamespace>
+    <Version>1.0.0</Version>
+    <Authors>GoodRP</Authors>
+    <Description>Lightweight Discord Rich Presence client for media playback</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+  </ItemGroup>
+
+</Project>
