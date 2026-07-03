@@ -88,3 +88,11 @@ logs/
 
 ## Discord CustomRP
 Discord-CustomRP-master/
+
+## Installer
+installer/
+installer-output/
+
+## Build outputs
+src/bin/
+src/obj/
