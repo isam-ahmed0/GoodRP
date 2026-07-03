@@ -15,7 +15,6 @@ public class MainForm : Form
     private CheckBox _chkAutoShow = new();
     private CheckBox _chkShowAlbumArt = new();
     private Button _btnConnect = new();
-    private Button _btnDisconnect = new();
     private Button _btnShow = new();
     private Button _btnHide = new();
     private GroupBox _grpConnection = new();
@@ -27,6 +26,7 @@ public class MainForm : Form
     private PictureBox _picAlbumArt = new();
 
     private MediaInfo? _currentMedia;
+    private string? _pendingImageUrl;
 
     public MainForm(MediaWatcher mediaWatcher, DiscordManager discordManager)
     {
@@ -52,7 +52,6 @@ public class MainForm : Form
         BackColor = Color.FromArgb(30, 30, 30);
         ForeColor = Color.White;
 
-        // Connection Group
         _grpConnection.Text = "Discord Connection";
         _grpConnection.Location = new Point(12, 12);
         _grpConnection.Size = new Size(440, 100);
@@ -81,7 +80,6 @@ public class MainForm : Form
 
         _grpConnection.Controls.AddRange(new Control[] { lblId, _txtDiscordId, _btnConnect, _lblStatus });
 
-        // Media Group
         _grpMedia.Text = "Now Playing";
         _grpMedia.Location = new Point(12, 120);
         _grpMedia.Size = new Size(440, 160);
@@ -129,7 +127,6 @@ public class MainForm : Form
 
         _grpMedia.Controls.AddRange(new Control[] { _picAlbumArt, _lblNowPlaying, _lblArtist, _lblAlbum, _btnShow, _btnHide });
 
-        // Settings Group
         _grpSettings.Text = "Settings";
         _grpSettings.Location = new Point(12, 290);
         _grpSettings.Size = new Size(440, 130);
@@ -155,7 +152,6 @@ public class MainForm : Form
 
         _grpSettings.Controls.AddRange(new Control[] { lblImgur, _txtImgurId, _chkAutoShow, _chkShowAlbumArt });
 
-        // Current RP Label
         _lblCurrentMedia.Text = "Discord RP: Not showing";
         _lblCurrentMedia.Location = new Point(12, 430);
         _lblCurrentMedia.Size = new Size(440, 20);
@@ -175,17 +171,35 @@ public class MainForm : Form
             ContextMenuStrip = new ContextMenuStrip()
         };
 
-        _trayIcon.ContextMenuStrip.Items.Add("Open", null, (s, e) => { Show(); WindowState = FormWindowState.Normal; });
+        _trayIcon.ContextMenuStrip.Items.Add("Open", null, (s, e) => ShowForm());
         _trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
         _trayIcon.ContextMenuStrip.Items.Add("Quit", null, (s, e) => Application.Exit());
 
-        _trayIcon.DoubleClick += (s, e) => { Show(); WindowState = FormWindowState.Normal; };
+        _trayIcon.DoubleClick += (s, e) => ShowForm();
+        _trayIcon.BalloonTipClicked += (s, e) => ShowForm();
+    }
+
+    private void ShowForm()
+    {
+        if (InvokeRequired)
+        {
+            Invoke(ShowForm);
+            return;
+        }
+        Visible = true;
+        Show();
+        WindowState = FormWindowState.Normal;
+        Activate();
+        TopMost = true;
+        TopMost = false;
     }
 
     private void WireEvents()
     {
         _mediaWatcher.MediaChanged += OnMediaChanged;
         _mediaWatcher.MediaStopped += OnMediaStopped;
+        _mediaWatcher.TimelineChanged += OnTimelineChanged;
+        _mediaWatcher.PlaybackStateChanged += OnPlaybackStateChanged;
         _discordManager.StatusChanged += OnDiscordStatusChanged;
         _discordManager.PresenceUpdated += OnPresenceUpdated;
     }
@@ -225,7 +239,7 @@ public class MainForm : Form
     {
         if (_currentMedia != null)
         {
-            ShowPresence(_currentMedia);
+            _discordManager.SetPresence(_currentMedia, _pendingImageUrl);
         }
     }
 
@@ -235,48 +249,98 @@ public class MainForm : Form
         _lblCurrentMedia.Text = "Discord RP: Not showing";
     }
 
-    private void OnMediaChanged(MediaInfo media)
+    private async void OnMediaChanged(MediaInfo media)
     {
         _currentMedia = media;
 
         if (InvokeRequired)
-        {
             Invoke(() => UpdateMediaDisplay(media));
-        }
         else
-        {
             UpdateMediaDisplay(media);
-        }
 
-        if (ConfigManager.Config.AutoShowOnDiscord)
-        {
-            ShowPresence(media);
-        }
-    }
-
-    private void UpdateMediaDisplay(MediaInfo media)
-    {
-        _lblNowPlaying.Text = string.IsNullOrWhiteSpace(media.Title) ? "Unknown" : media.Title;
-        _lblArtist.Text = media.Artist;
-        _lblAlbum.Text = media.Album;
-
-        _trayIcon!.Text = $"GoodRP - {media.Title}"[..Math.Min(63, $"GoodRP - {media.Title}".Length)];
-    }
-
-    private async void ShowPresence(MediaInfo media)
-    {
         string? imageUrl = null;
         if (ConfigManager.Config.ShowAlbumArt && media.Thumbnail != null)
         {
             var cacheKey = $"{media.Title}_{media.Artist}";
             imageUrl = await ImageUploader.UploadThumbnailAsync(media.Thumbnail, cacheKey);
         }
+        _pendingImageUrl = imageUrl;
 
-        _discordManager.SetPresence(media, imageUrl);
+        if (ConfigManager.Config.AutoShowOnDiscord)
+        {
+            _discordManager.SetPresence(media, imageUrl);
+        }
+        else
+        {
+            ShowTrayNotification(media.CleanTitle, media.Artist);
+        }
+    }
+
+    private void OnPlaybackStateChanged(MediaPlaybackState state)
+    {
+        if (state == MediaPlaybackState.Paused)
+        {
+            _discordManager.ClearPresence();
+
+            if (InvokeRequired)
+                Invoke(() =>
+                {
+                    _lblCurrentMedia.Text = "Discord RP: Paused";
+                    Hide();
+                });
+            else
+            {
+                _lblCurrentMedia.Text = "Discord RP: Paused";
+                Hide();
+            }
+        }
+        else if (state == MediaPlaybackState.Playing && _currentMedia != null)
+        {
+            if (ConfigManager.Config.AutoShowOnDiscord)
+            {
+                _discordManager.SetPresence(_currentMedia, _pendingImageUrl);
+            }
+        }
+    }
+
+    private void ShowTrayNotification(string title, string artist)
+    {
+        var displayTitle = string.IsNullOrWhiteSpace(title) ? "Unknown" : title;
+        var text = string.IsNullOrWhiteSpace(artist)
+            ? displayTitle
+            : $"{displayTitle} — {artist}";
+
+        if (text.Length > 127) text = text[..124] + "...";
+
+        _trayIcon!.ShowBalloonTip(
+            8000,
+            "Now Playing",
+            text + "\nClick to show on Discord",
+            ToolTipIcon.Info
+        );
+    }
+
+    private void UpdateMediaDisplay(MediaInfo media)
+    {
+        _lblNowPlaying.Text = string.IsNullOrWhiteSpace(media.CleanTitle) ? "Unknown" : media.CleanTitle;
+        _lblArtist.Text = media.Artist;
+        _lblAlbum.Text = media.Album;
+
+        var trayText = $"GoodRP - {media.CleanTitle}";
+        _trayIcon!.Text = trayText.Length > 63 ? trayText[..63] : trayText;
+    }
+
+    private void OnTimelineChanged()
+    {
+        _discordManager.RefreshPresence();
     }
 
     private void OnMediaStopped()
     {
+        _currentMedia = null;
+        _pendingImageUrl = null;
+        _discordManager.ClearPresence();
+
         if (InvokeRequired)
         {
             Invoke(() =>
@@ -285,6 +349,9 @@ public class MainForm : Form
                 _lblArtist.Text = "";
                 _lblAlbum.Text = "";
                 _picAlbumArt.Image = null;
+                _lblCurrentMedia.Text = "Discord RP: Not showing";
+                _trayIcon!.Text = "GoodRP";
+                Hide();
             });
         }
         else
@@ -293,6 +360,9 @@ public class MainForm : Form
             _lblArtist.Text = "";
             _lblAlbum.Text = "";
             _picAlbumArt.Image = null;
+            _lblCurrentMedia.Text = "Discord RP: Not showing";
+            _trayIcon!.Text = "GoodRP";
+            Hide();
         }
     }
 

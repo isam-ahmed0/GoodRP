@@ -21,6 +21,25 @@ public class MediaInfo
     public TimeSpan Position { get; set; } = TimeSpan.Zero;
     public TimeSpan Duration { get; set; } = TimeSpan.Zero;
     public IRandomAccessStreamReference? Thumbnail { get; set; } = null;
+
+    public string CleanTitle => CleanMediaTitle(Title);
+
+    private static string CleanMediaTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return title;
+
+        var exts = new[] { ".mp3", ".mp4", ".mkv", ".avi", ".flac", ".ogg", ".wav", ".m4a", ".webm", ".mov", ".wmv" };
+        foreach (var ext in exts)
+        {
+            if (title.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+            {
+                title = title[..^ext.Length];
+                break;
+            }
+        }
+
+        return title.Replace('_', ' ').Trim();
+    }
 }
 
 public class MediaWatcher : IDisposable
@@ -31,6 +50,8 @@ public class MediaWatcher : IDisposable
 
     public event Action<MediaInfo>? MediaChanged;
     public event Action? MediaStopped;
+    public event Action<MediaPlaybackState>? PlaybackStateChanged;
+    public event Action? TimelineChanged;
 
     public MediaInfo? CurrentMedia { get; private set; }
 
@@ -48,6 +69,7 @@ public class MediaWatcher : IDisposable
 
     private async void OnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
     {
+        DetachSession();
         var session = sender.GetCurrentSession();
         if (session != null)
         {
@@ -62,6 +84,7 @@ public class MediaWatcher : IDisposable
 
     private async Task AttachSessionAsync(GlobalSystemMediaTransportControlsSession session)
     {
+        DetachSession();
         _currentSession = session;
 
         session.MediaPropertiesChanged += OnMediaPropertiesChanged;
@@ -71,6 +94,16 @@ public class MediaWatcher : IDisposable
         await UpdateMediaInfoAsync(session);
     }
 
+    private void DetachSession()
+    {
+        if (_currentSession == null) return;
+
+        _currentSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
+        _currentSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
+        _currentSession.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+        _currentSession = null;
+    }
+
     private async void OnMediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
     {
         await UpdateMediaInfoAsync(sender);
@@ -78,12 +111,44 @@ public class MediaWatcher : IDisposable
 
     private async void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
     {
-        await UpdateMediaInfoAsync(sender);
+        try
+        {
+            var playback = sender.GetPlaybackInfo();
+            var state = MapPlaybackState(playback.PlaybackStatus);
+
+            if (state == MediaPlaybackState.Stopped)
+            {
+                CurrentMedia = null;
+                MediaStopped?.Invoke();
+                return;
+            }
+
+            if (CurrentMedia != null)
+            {
+                CurrentMedia.State = state;
+                PlaybackStateChanged?.Invoke(state);
+            }
+
+            if (state == MediaPlaybackState.Playing)
+            {
+                await UpdateMediaInfoAsync(sender);
+            }
+        }
+        catch { }
     }
 
     private void OnTimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args)
     {
-        UpdateTimeline(sender);
+        if (CurrentMedia == null) return;
+
+        try
+        {
+            var timeline = sender.GetTimelineProperties();
+            CurrentMedia.Position = timeline.Position;
+            CurrentMedia.Duration = timeline.EndTime - timeline.StartTime;
+            TimelineChanged?.Invoke();
+        }
+        catch { }
     }
 
     private async Task UpdateMediaInfoAsync(GlobalSystemMediaTransportControlsSession session)
@@ -104,6 +169,13 @@ public class MediaWatcher : IDisposable
 
             var state = MapPlaybackState(playback.PlaybackStatus);
 
+            if (state == MediaPlaybackState.Stopped)
+            {
+                CurrentMedia = null;
+                MediaStopped?.Invoke();
+                return;
+            }
+
             CurrentMedia = new MediaInfo
             {
                 Title = props.Title ?? "",
@@ -116,33 +188,13 @@ public class MediaWatcher : IDisposable
                 Thumbnail = props.Thumbnail
             };
 
-            if (state == MediaPlaybackState.Playing)
-            {
-                MediaChanged?.Invoke(CurrentMedia);
-            }
-            else if (state == MediaPlaybackState.Stopped)
-            {
-                CurrentMedia = null;
-                MediaStopped?.Invoke();
-            }
+            MediaChanged?.Invoke(CurrentMedia);
         }
         catch
         {
-            // Session may have closed
+            CurrentMedia = null;
+            MediaStopped?.Invoke();
         }
-    }
-
-    private void UpdateTimeline(GlobalSystemMediaTransportControlsSession session)
-    {
-        if (CurrentMedia == null) return;
-
-        try
-        {
-            var timeline = session.GetTimelineProperties();
-            CurrentMedia.Position = timeline.Position;
-            CurrentMedia.Duration = timeline.EndTime - timeline.StartTime;
-        }
-        catch { }
     }
 
     private static MediaPlaybackState MapPlaybackState(GlobalSystemMediaTransportControlsSessionPlaybackStatus status)
@@ -153,6 +205,7 @@ public class MediaWatcher : IDisposable
             GlobalSystemMediaTransportControlsSessionPlaybackStatus.Paused => MediaPlaybackState.Paused,
             GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped => MediaPlaybackState.Stopped,
             GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed => MediaPlaybackState.Stopped,
+            GlobalSystemMediaTransportControlsSessionPlaybackStatus.Opened => MediaPlaybackState.Playing,
             _ => MediaPlaybackState.None
         };
     }
@@ -162,12 +215,7 @@ public class MediaWatcher : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        if (_currentSession != null)
-        {
-            _currentSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
-            _currentSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
-            _currentSession.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
-        }
+        DetachSession();
 
         if (_sessionManager != null)
         {

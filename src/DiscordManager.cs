@@ -7,6 +7,10 @@ public class DiscordManager : IDisposable
     private DiscordRpcClient? _client;
     private bool _connected;
     private bool _disposed;
+    private MediaInfo? _currentMedia;
+    private string? _currentImageUrl;
+    private DateTime _anchorTime;
+    private TimeSpan _anchorPosition;
 
     public bool IsConnected => _connected;
     public event Action<string>? StatusChanged;
@@ -57,6 +61,8 @@ public class DiscordManager : IDisposable
             _client?.Dispose();
             _client = null;
             _connected = false;
+            _currentMedia = null;
+            _currentImageUrl = null;
             StatusChanged?.Invoke("Disconnected");
         }
         catch { }
@@ -64,10 +70,27 @@ public class DiscordManager : IDisposable
 
     public void SetPresence(MediaInfo media, string? imageUrl = null)
     {
-        if (_client == null || !_connected) return;
+        _currentMedia = media;
+        _currentImageUrl = imageUrl;
+        _anchorTime = DateTime.UtcNow;
+        _anchorPosition = media.Position;
+        UpdatePresence();
+    }
+
+    public void RefreshPresence()
+    {
+        if (_currentMedia != null)
+            UpdatePresence();
+    }
+
+    private void UpdatePresence()
+    {
+        if (_client == null || !_connected || _currentMedia == null) return;
 
         try
         {
+            var media = _currentMedia;
+
             var activityType = media.AppName.ToLower().Contains("video") ||
                                media.AppName.ToLower().Contains("movie") ||
                                media.AppName.ToLower().Contains("vlc") ||
@@ -75,43 +98,44 @@ public class DiscordManager : IDisposable
                 ? ActivityType.Watching
                 : ActivityType.Listening;
 
-            var details = media.Title;
-            if (string.IsNullOrWhiteSpace(details))
-                details = "Unknown Track";
+            var title = media.CleanTitle;
+            if (string.IsNullOrWhiteSpace(title))
+                title = "Unknown Track";
 
             var state = FormatState(media);
 
             var presence = new RichPresence
             {
+                Name = title,
                 Type = activityType,
-                StatusDisplay = StatusDisplayType.State,
-                Details = details,
+                Details = title,
                 State = state,
-                Assets = new Assets(),
-                Timestamps = new Timestamps()
+                Assets = new Assets()
             };
 
-            if (media.Duration.TotalSeconds > 0)
+            if (media.Duration.TotalSeconds > 0 && media.State == MediaPlaybackState.Playing)
             {
-                var startTime = DateTime.UtcNow - media.Position;
-                presence.Timestamps.Start = startTime;
+                var elapsed = DateTime.UtcNow - _anchorTime + _anchorPosition;
+                if (elapsed < TimeSpan.Zero) elapsed = TimeSpan.Zero;
+                if (elapsed > media.Duration) elapsed = media.Duration;
+
+                presence.Timestamps = new Timestamps
+                {
+                    Start = DateTime.UtcNow - elapsed,
+                    End = DateTime.UtcNow - elapsed + media.Duration
+                };
             }
 
-            if (!string.IsNullOrWhiteSpace(imageUrl))
+            if (!string.IsNullOrWhiteSpace(_currentImageUrl))
             {
-                presence.Assets.LargeImageUrl = imageUrl;
-                presence.Assets.LargeImageText = media.Title;
-            }
-            else
-            {
-                presence.Assets.LargeImageKey = "goodrp_logo";
-                presence.Assets.LargeImageText = "GoodRP";
+                presence.Assets.LargeImageUrl = _currentImageUrl;
+                presence.Assets.LargeImageText = title;
             }
 
             presence.Assets.SmallImageText = media.AppName;
 
             _client.SetPresence(presence);
-            PresenceUpdated?.Invoke($"{media.Title} - {media.Artist}");
+            PresenceUpdated?.Invoke($"{title} - {media.Artist}");
         }
         catch (Exception ex)
         {
@@ -126,6 +150,8 @@ public class DiscordManager : IDisposable
         try
         {
             _client.ClearPresence();
+            _currentMedia = null;
+            _currentImageUrl = null;
             PresenceUpdated?.Invoke("");
         }
         catch { }
