@@ -96,3 +96,6 @@ installer-output/
 ## Build outputs
 src/bin/
 src/obj/
+
+## Publish
+publish/
