@@ -1,6 +1,6 @@
 ---
 name: goodrp
-description: Detect and control Discord Rich Presence for media playback via GoodRP. Query what's playing, set activity type (watching/listening), optionally override media details, and manage presence display.
+description: Detect what media the user is playing on Windows (Spotify, VLC, Chrome, etc.) via SMTC, and optionally display it on Discord via Rich Presence. Query current song/video details, set activity type (watching/listening), override media info, and manage Discord presence.
 metadata:
   author: GoodRP
   version: 1.2.0
@@ -8,22 +8,22 @@ metadata:
   tools: [get_current_media, set_presence, clear_presence, set_auto_show, get_status, get_config]
 ---
 
-# GoodRP — Discord Rich Presence for Media
+# GoodRP — Media Detection & Discord Rich Presence
 
-Control what shows on your Discord profile when playing music or videos.
+Detect what the user is playing on their PC (music, video, etc.) and optionally show it on Discord.
 
 ## When to Use This Skill
 
 Use this skill when the user asks to:
 
-- "Show my music on Discord"
-- "What am I listening to?"
-- "Hide my Discord status"
-- "Show as watching instead of listening"
-- "What's my Discord status?"
-- "Auto-show my music on Discord"
-- "Override the song title on Discord"
-- Anything related to Discord Rich Presence for media playback
+- **Query media** — "What am I listening to?", "What song is this?", "What video is playing?", "What's on right now?"
+- **Show on Discord** — "Show my music on Discord", "Put this on my Discord status"
+- **Hide from Discord** — "Hide my Discord status", "Remove my presence"
+- **Change display** — "Show as watching instead of listening"
+- **Check status** — "What's my Discord status?", "Is my music showing on Discord?"
+- **Auto/manual mode** — "Auto-show my music on Discord"
+- **Override details** — "Change the title to something else on Discord"
+- Anything related to detecting the user's current media or Discord Rich Presence
 
 ## How It Works
 
@@ -52,20 +52,29 @@ and exposes it as an MCP server (stdio) or HTTP API.
 
 ## Example Interactions
 
-### Show music on Discord
-```
-User: "Show my music on Discord"
-Agent:
-  1. get_current_media() → verify media is playing
-  2. set_presence(type="listening") → show on Discord
-```
-
 ### What am I listening to?
 ```
 User: "What am I listening to?"
 Agent:
   1. get_current_media() → returns title, artist, album, progress, estimated_type
-  2. Reports: "You're listening to Bohemian Rhapsody by Queen"
+  2. Reports: "You're listening to Bohemian Rhapsody by Queen — 3:15 of 5:54"
+```
+
+### What video is playing?
+```
+User: "What video is playing right now?"
+Agent:
+  1. get_current_media() → returns title, app_name="VLC", estimated_type="watching"
+  2. Reports: "You're watching Big Buck Bunny in VLC — 12:30 of 30:00"
+```
+
+### Show music on Discord
+```
+User: "Show my music on Discord"
+Agent:
+  1. get_current_media() → verify media is playing, check estimated_type
+  2. set_presence(type="listening") → show on Discord
+  3. Confirms: "Now showing Bohemian Rhapsody on Discord"
 ```
 
 ### Show as watching
@@ -110,7 +119,7 @@ Agent:
 
 ## Setup Requirements
 
-1. **GoodRP installed** — Download from https://github.com/AhmedNSAli/GoodRP/releases
+1. **GoodRP installed** — Download from https://github.com/isam-ahmed0/GoodRP/releases
 2. **Discord Application ID** — Create at https://discord.com/developers/applications
 3. **GoodRP running** — Either:
    - GUI mode with auto-show enabled, OR
@@ -118,7 +127,7 @@ Agent:
 
 ## Platform Setup
 
-GoodRP ships with a bundled MCP skill. Install it from: https://github.com/AhmedNSAli/GoodRP/tree/main/skills/goodrp
+GoodRP ships with a bundled MCP skill. Install it from: https://github.com/isam-ahmed0/GoodRP/tree/main/skills/goodrp
 
 ### Claude Code
 
