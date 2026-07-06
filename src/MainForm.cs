@@ -6,7 +6,11 @@ public class MainForm : Form
 {
     private readonly MediaWatcher _mediaWatcher;
     private readonly DiscordManager _discordManager;
+    private HotkeyManager? _hotkeyManager;
     private NotifyIcon? _trayIcon;
+
+    private const int HOTKEY_SHOW = 1;
+    private const int HOTKEY_HIDE = 2;
 
     private Label _lblStatus = new();
     private Label _lblCurrentMedia = new();
@@ -14,6 +18,12 @@ public class MainForm : Form
     private TextBox _txtImgurId = new();
     private CheckBox _chkAutoShow = new();
     private CheckBox _chkShowAlbumArt = new();
+    private CheckBox _chkMcpServer = new();
+    private CheckBox _chkUseHotkeys = new();
+    private CheckBox _chkUseNotifications = new();
+    private RadioButton _rbAuto = new();
+    private RadioButton _rbListening = new();
+    private RadioButton _rbWatching = new();
     private Button _btnConnect = new();
     private Button _btnShow = new();
     private Button _btnHide = new();
@@ -24,6 +34,8 @@ public class MainForm : Form
     private Label _lblArtist = new();
     private Label _lblAlbum = new();
     private PictureBox _picAlbumArt = new();
+    private Label _lblShowHotkey = new();
+    private Label _lblHideHotkey = new();
 
     private MediaInfo? _currentMedia;
     private string? _pendingImageUrl;
@@ -43,9 +55,9 @@ public class MainForm : Form
     private void InitializeUI()
     {
         Text = "GoodRP - Discord Rich Presence";
-        Size = new Size(480, 520);
-        MinimumSize = new Size(480, 520);
-        MaximumSize = new Size(480, 520);
+        Size = new Size(480, 610);
+        MinimumSize = new Size(480, 610);
+        MaximumSize = new Size(480, 610);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -129,7 +141,7 @@ public class MainForm : Form
 
         _grpSettings.Text = "Settings";
         _grpSettings.Location = new Point(12, 290);
-        _grpSettings.Size = new Size(440, 130);
+        _grpSettings.Size = new Size(440, 250);
         _grpSettings.ForeColor = Color.White;
         _grpSettings.BackColor = Color.FromArgb(40, 40, 40);
 
@@ -150,10 +162,59 @@ public class MainForm : Form
         _chkShowAlbumArt.AutoSize = true;
         _chkShowAlbumArt.ForeColor = Color.LightGray;
 
-        _grpSettings.Controls.AddRange(new Control[] { lblImgur, _txtImgurId, _chkAutoShow, _chkShowAlbumArt });
+        _chkMcpServer.Text = "Enable MCP Server (for AI agents)";
+        _chkMcpServer.Location = new Point(230, 55);
+        _chkMcpServer.AutoSize = true;
+        _chkMcpServer.ForeColor = Color.LightGray;
+
+        var lblActivity = new Label { Text = "Activity:", Location = new Point(15, 105), AutoSize = true, ForeColor = Color.LightGray };
+
+        _rbAuto.Text = "Auto";
+        _rbAuto.Location = new Point(85, 103);
+        _rbAuto.AutoSize = true;
+        _rbAuto.ForeColor = Color.LightGray;
+        _rbAuto.Checked = true;
+
+        _rbListening.Text = "Listening";
+        _rbListening.Location = new Point(140, 103);
+        _rbListening.AutoSize = true;
+        _rbListening.ForeColor = Color.LightGray;
+
+        _rbWatching.Text = "Watching";
+        _rbWatching.Location = new Point(240, 103);
+        _rbWatching.AutoSize = true;
+        _rbWatching.ForeColor = Color.LightGray;
+
+        var lblNotifications = new Label { Text = "Notifications:", Location = new Point(15, 135), AutoSize = true, ForeColor = Color.LightGray };
+
+        _chkUseNotifications.Text = "Show balloon notification";
+        _chkUseNotifications.Location = new Point(15, 155);
+        _chkUseNotifications.AutoSize = true;
+        _chkUseNotifications.ForeColor = Color.LightGray;
+
+        var lblHotkeys = new Label { Text = "Hotkeys:", Location = new Point(15, 185), AutoSize = true, ForeColor = Color.LightGray };
+
+        _chkUseHotkeys.Text = "Enable global hotkeys";
+        _chkUseHotkeys.Location = new Point(15, 205);
+        _chkUseHotkeys.AutoSize = true;
+        _chkUseHotkeys.ForeColor = Color.LightGray;
+
+        var lblShowKey = new Label { Text = "Show:", Location = new Point(230, 185), AutoSize = true, ForeColor = Color.LightGray };
+        _lblShowHotkey.Text = ConfigManager.Config.ShowHotkey;
+        _lblShowHotkey.Location = new Point(280, 185);
+        _lblShowHotkey.AutoSize = true;
+        _lblShowHotkey.ForeColor = Color.FromArgb(88, 101, 242);
+
+        var lblHideKey = new Label { Text = "Hide:", Location = new Point(230, 205), AutoSize = true, ForeColor = Color.LightGray };
+        _lblHideHotkey.Text = ConfigManager.Config.HideHotkey;
+        _lblHideHotkey.Location = new Point(280, 205);
+        _lblHideHotkey.AutoSize = true;
+        _lblHideHotkey.ForeColor = Color.FromArgb(88, 101, 242);
+
+        _grpSettings.Controls.AddRange(new Control[] { lblImgur, _txtImgurId, _chkAutoShow, _chkShowAlbumArt, _chkMcpServer, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey });
 
         _lblCurrentMedia.Text = "Discord RP: Not showing";
-        _lblCurrentMedia.Location = new Point(12, 430);
+        _lblCurrentMedia.Location = new Point(12, 545);
         _lblCurrentMedia.Size = new Size(440, 20);
         _lblCurrentMedia.ForeColor = Color.Gray;
         _lblCurrentMedia.TextAlign = ContentAlignment.MiddleCenter;
@@ -202,6 +263,10 @@ public class MainForm : Form
         _mediaWatcher.PlaybackStateChanged += OnPlaybackStateChanged;
         _discordManager.StatusChanged += OnDiscordStatusChanged;
         _discordManager.PresenceUpdated += OnPresenceUpdated;
+
+        _rbAuto.CheckedChanged += OnActivityTypeChanged;
+        _rbListening.CheckedChanged += OnActivityTypeChanged;
+        _rbWatching.CheckedChanged += OnActivityTypeChanged;
     }
 
     private void LoadSettings()
@@ -210,6 +275,17 @@ public class MainForm : Form
         _txtImgurId.Text = ConfigManager.Config.ImgurClientId;
         _chkAutoShow.Checked = ConfigManager.Config.AutoShowOnDiscord;
         _chkShowAlbumArt.Checked = ConfigManager.Config.ShowAlbumArt;
+        _chkMcpServer.Checked = ConfigManager.Config.McpServerEnabled;
+        _chkUseHotkeys.Checked = ConfigManager.Config.UseHotkeys;
+        _chkUseNotifications.Checked = ConfigManager.Config.UseNotifications;
+
+        var overrideVal = ConfigManager.Config.ActivityTypeOverride;
+        _rbAuto.Checked = overrideVal == "Auto";
+        _rbListening.Checked = overrideVal == "Listening";
+        _rbWatching.Checked = overrideVal == "Watching";
+
+        _lblShowHotkey.Text = ConfigManager.Config.ShowHotkey;
+        _lblHideHotkey.Text = ConfigManager.Config.HideHotkey;
     }
 
     private void SaveSettings()
@@ -218,6 +294,10 @@ public class MainForm : Form
         ConfigManager.Config.ImgurClientId = _txtImgurId.Text.Trim();
         ConfigManager.Config.AutoShowOnDiscord = _chkAutoShow.Checked;
         ConfigManager.Config.ShowAlbumArt = _chkShowAlbumArt.Checked;
+        ConfigManager.Config.McpServerEnabled = _chkMcpServer.Checked;
+        ConfigManager.Config.UseHotkeys = _chkUseHotkeys.Checked;
+        ConfigManager.Config.UseNotifications = _chkUseNotifications.Checked;
+        ConfigManager.Config.ActivityTypeOverride = _rbAuto.Checked ? "Auto" : _rbListening.Checked ? "Listening" : "Watching";
         ConfigManager.Save();
     }
 
@@ -249,6 +329,15 @@ public class MainForm : Form
         _lblCurrentMedia.Text = "Discord RP: Not showing";
     }
 
+    private void OnActivityTypeChanged(object? sender, EventArgs e)
+    {
+        if (sender is RadioButton rb && rb.Checked)
+        {
+            SaveSettings();
+            _discordManager.RefreshPresence();
+        }
+    }
+
     private async void OnMediaChanged(MediaInfo media)
     {
         _currentMedia = media;
@@ -270,7 +359,7 @@ public class MainForm : Form
         {
             _discordManager.SetPresence(media, imageUrl);
         }
-        else
+        else if (ConfigManager.Config.UseNotifications)
         {
             ShowTrayNotification(media.CleanTitle, media.Artist);
         }
@@ -283,16 +372,9 @@ public class MainForm : Form
             _discordManager.ClearPresence();
 
             if (InvokeRequired)
-                Invoke(() =>
-                {
-                    _lblCurrentMedia.Text = "Discord RP: Paused";
-                    Hide();
-                });
+                Invoke(() => _lblCurrentMedia.Text = "Discord RP: Paused");
             else
-            {
                 _lblCurrentMedia.Text = "Discord RP: Paused";
-                Hide();
-            }
         }
         else if (state == MediaPlaybackState.Playing && _currentMedia != null)
         {
@@ -351,7 +433,6 @@ public class MainForm : Form
                 _picAlbumArt.Image = null;
                 _lblCurrentMedia.Text = "Discord RP: Not showing";
                 _trayIcon!.Text = "GoodRP";
-                Hide();
             });
         }
         else
@@ -362,7 +443,6 @@ public class MainForm : Form
             _picAlbumArt.Image = null;
             _lblCurrentMedia.Text = "Discord RP: Not showing";
             _trayIcon!.Text = "GoodRP";
-            Hide();
         }
     }
 
@@ -402,8 +482,61 @@ public class MainForm : Form
         }
     }
 
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        RegisterHotkeys();
+    }
+
+    private void RegisterHotkeys()
+    {
+        _hotkeyManager?.Dispose();
+        _hotkeyManager = new HotkeyManager(Handle);
+
+        _hotkeyManager.HotkeyFailed += (id, reason) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"[GoodRP] Hotkey: {reason}");
+        };
+
+        if (ConfigManager.Config.UseHotkeys)
+        {
+            _hotkeyManager.Register(ConfigManager.Config.ShowHotkey, () =>
+            {
+                if (_currentMedia != null)
+                {
+                    _discordManager.SetPresence(_currentMedia, _pendingImageUrl);
+                    if (InvokeRequired)
+                        Invoke(() => _lblCurrentMedia.Text = $"Discord RP: {_currentMedia.CleanTitle}");
+                    else
+                        _lblCurrentMedia.Text = $"Discord RP: {_currentMedia.CleanTitle}";
+                }
+            });
+
+            _hotkeyManager.Register(ConfigManager.Config.HideHotkey, () =>
+            {
+                _discordManager.ClearPresence();
+                if (InvokeRequired)
+                    Invoke(() => _lblCurrentMedia.Text = "Discord RP: Not showing");
+                else
+                    _lblCurrentMedia.Text = "Discord RP: Not showing";
+            });
+        }
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == NativeMethods.WM_HOTKEY && _hotkeyManager != null)
+        {
+            _hotkeyManager.HandleHotkey(m.WParam.ToInt32());
+            return;
+        }
+        base.WndProc(ref m);
+    }
+
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        _hotkeyManager?.UnregisterAll();
+
         base.OnFormClosing(e);
 
         if (e.CloseReason == CloseReason.UserClosing)
@@ -415,6 +548,7 @@ public class MainForm : Form
         {
             SaveSettings();
             _trayIcon?.Dispose();
+            _hotkeyManager?.Dispose();
         }
     }
 

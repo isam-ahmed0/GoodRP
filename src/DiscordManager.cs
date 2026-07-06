@@ -98,6 +98,12 @@ public class DiscordManager : IDisposable
                 ? ActivityType.Watching
                 : ActivityType.Listening;
 
+            var overrideStr = ConfigManager.Config.ActivityTypeOverride;
+            if (overrideStr == "Listening")
+                activityType = ActivityType.Listening;
+            else if (overrideStr == "Watching")
+                activityType = ActivityType.Watching;
+
             var title = media.CleanTitle;
             if (string.IsNullOrWhiteSpace(title))
                 title = "Unknown Track";

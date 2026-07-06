@@ -7,17 +7,25 @@ public class SettingsForm : Form
     private TextBox _txtImgurClientId = new();
     private CheckBox _chkAutoShow = new();
     private CheckBox _chkShowAlbumArt = new();
+    private CheckBox _chkMcpServer = new();
+    private CheckBox _chkUseHotkeys = new();
+    private CheckBox _chkUseNotifications = new();
+    private RadioButton _rbAuto = new();
+    private RadioButton _rbListening = new();
+    private RadioButton _rbWatching = new();
     private Button _btnSave = new();
     private Button _btnConnect = new();
     private Button _btnDisconnect = new();
     private Label _lblStatus = new();
+    private Label _lblShowHotkey = new();
+    private Label _lblHideHotkey = new();
 
     public SettingsForm(DiscordManager discordManager)
     {
         _discordManager = discordManager;
 
         Text = "GoodRP Settings";
-        Size = new Size(420, 340);
+        Size = new Size(420, 550);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -59,22 +67,63 @@ public class SettingsForm : Form
         _chkShowAlbumArt.Location = new Point(15, 160);
         _chkShowAlbumArt.AutoSize = true;
 
+        _chkMcpServer.Text = "Enable MCP Server (for AI agents)";
+        _chkMcpServer.Location = new Point(15, 185);
+        _chkMcpServer.AutoSize = true;
+
+        var lblActivity = new Label { Text = "Activity Type:", Location = new Point(15, 215), AutoSize = true };
+
+        _rbAuto.Text = "Auto";
+        _rbAuto.Location = new Point(15, 235);
+        _rbAuto.AutoSize = true;
+        _rbAuto.Checked = true;
+
+        _rbListening.Text = "Listening";
+        _rbListening.Location = new Point(80, 235);
+        _rbListening.AutoSize = true;
+
+        _rbWatching.Text = "Watching";
+        _rbWatching.Location = new Point(185, 235);
+        _rbWatching.AutoSize = true;
+
+        var lblNotifications = new Label { Text = "Notifications:", Location = new Point(15, 265), AutoSize = true };
+
+        _chkUseNotifications.Text = "Show balloon notification";
+        _chkUseNotifications.Location = new Point(15, 285);
+        _chkUseNotifications.AutoSize = true;
+
+        var lblHotkeys = new Label { Text = "Hotkeys:", Location = new Point(15, 315), AutoSize = true };
+
+        _chkUseHotkeys.Text = "Enable global hotkeys";
+        _chkUseHotkeys.Location = new Point(15, 335);
+        _chkUseHotkeys.AutoSize = true;
+
+        var lblShowKey = new Label { Text = "Show shortcut:", Location = new Point(15, 365), AutoSize = true };
+        _lblShowHotkey.Text = ConfigManager.Config.ShowHotkey;
+        _lblShowHotkey.Location = new Point(120, 365);
+        _lblShowHotkey.AutoSize = true;
+
+        var lblHideKey = new Label { Text = "Hide shortcut:", Location = new Point(15, 390), AutoSize = true };
+        _lblHideHotkey.Text = ConfigManager.Config.HideHotkey;
+        _lblHideHotkey.Location = new Point(120, 390);
+        _lblHideHotkey.AutoSize = true;
+
         _btnConnect.Text = "Connect";
-        _btnConnect.Location = new Point(15, 200);
+        _btnConnect.Location = new Point(15, 420);
         _btnConnect.Size = new Size(100, 30);
         _btnConnect.Click += BtnConnect_Click;
 
         _btnDisconnect.Text = "Disconnect";
-        _btnDisconnect.Location = new Point(125, 200);
+        _btnDisconnect.Location = new Point(125, 420);
         _btnDisconnect.Size = new Size(100, 30);
         _btnDisconnect.Click += BtnDisconnect_Click;
 
         _lblStatus.Text = "Status: Disconnected";
-        _lblStatus.Location = new Point(240, 208);
+        _lblStatus.Location = new Point(240, 428);
         _lblStatus.AutoSize = true;
 
         _btnSave.Text = "Save";
-        _btnSave.Location = new Point(15, 250);
+        _btnSave.Location = new Point(15, 460);
         _btnSave.Size = new Size(370, 30);
         _btnSave.Click += BtnSave_Click;
 
@@ -82,7 +131,11 @@ public class SettingsForm : Form
         {
             lblDiscord, _txtDiscordClientId,
             lblImgur, _txtImgurClientId,
-            _chkAutoShow, _chkShowAlbumArt,
+            _chkAutoShow, _chkShowAlbumArt, _chkMcpServer,
+            lblActivity, _rbAuto, _rbListening, _rbWatching,
+            lblNotifications, _chkUseNotifications,
+            lblHotkeys, _chkUseHotkeys,
+            lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey,
             _btnConnect, _btnDisconnect, _lblStatus,
             _btnSave
         });
@@ -94,6 +147,17 @@ public class SettingsForm : Form
         _txtImgurClientId.Text = ConfigManager.Config.ImgurClientId;
         _chkAutoShow.Checked = ConfigManager.Config.AutoShowOnDiscord;
         _chkShowAlbumArt.Checked = ConfigManager.Config.ShowAlbumArt;
+        _chkMcpServer.Checked = ConfigManager.Config.McpServerEnabled;
+        _chkUseHotkeys.Checked = ConfigManager.Config.UseHotkeys;
+        _chkUseNotifications.Checked = ConfigManager.Config.UseNotifications;
+
+        var overrideVal = ConfigManager.Config.ActivityTypeOverride;
+        _rbAuto.Checked = overrideVal == "Auto";
+        _rbListening.Checked = overrideVal == "Listening";
+        _rbWatching.Checked = overrideVal == "Watching";
+
+        _lblShowHotkey.Text = ConfigManager.Config.ShowHotkey;
+        _lblHideHotkey.Text = ConfigManager.Config.HideHotkey;
 
         UpdateStatus();
     }
@@ -135,6 +199,10 @@ public class SettingsForm : Form
         ConfigManager.Config.ImgurClientId = _txtImgurClientId.Text.Trim();
         ConfigManager.Config.AutoShowOnDiscord = _chkAutoShow.Checked;
         ConfigManager.Config.ShowAlbumArt = _chkShowAlbumArt.Checked;
+        ConfigManager.Config.McpServerEnabled = _chkMcpServer.Checked;
+        ConfigManager.Config.UseHotkeys = _chkUseHotkeys.Checked;
+        ConfigManager.Config.UseNotifications = _chkUseNotifications.Checked;
+        ConfigManager.Config.ActivityTypeOverride = _rbAuto.Checked ? "Auto" : _rbListening.Checked ? "Listening" : "Watching";
         ConfigManager.Save();
 
         MessageBox.Show("Settings saved!", "GoodRP", MessageBoxButtons.OK, MessageBoxIcon.Information);

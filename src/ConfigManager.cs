@@ -8,8 +8,14 @@ public class AppConfig
     public string ImgurClientId { get; set; } = "";
     public bool AutoShowOnDiscord { get; set; } = false;
     public bool ShowAlbumArt { get; set; } = true;
+    public string ActivityTypeOverride { get; set; } = "Auto";
     public List<string> AllowedApps { get; set; } = new();
     public List<string> IgnoredApps { get; set; } = new();
+    public bool McpServerEnabled { get; set; } = false;
+    public bool UseHotkeys { get; set; } = true;
+    public bool UseNotifications { get; set; } = true;
+    public string ShowHotkey { get; set; } = "Ctrl+Shift+G";
+    public string HideHotkey { get; set; } = "Ctrl+Shift+H";
 }
 
 public static class ConfigManager

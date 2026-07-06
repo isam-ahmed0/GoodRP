@@ -1,3 +1,6 @@
+using GoodRP.Api;
+using GoodRP.Mcp;
+
 namespace GoodRP;
 
 static class Program
@@ -8,6 +11,15 @@ static class Program
     [STAThread]
     static async Task Main(string[] args)
     {
+        var mcpMode = args.Contains("--mcp");
+        var apiMode = args.Contains("--api");
+
+        if (mcpMode || apiMode)
+        {
+            await RunHeadlessMode(args, mcpMode, apiMode);
+            return;
+        }
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -28,5 +40,63 @@ static class Program
 
         _mediaWatcher?.Dispose();
         _discordManager?.Dispose();
+    }
+
+    static async Task RunHeadlessMode(string[] args, bool mcpMode, bool apiMode)
+    {
+        Console.Error.WriteLine("[GoodRP] Starting headless mode...");
+
+        _discordManager = new DiscordManager();
+        _mediaWatcher = new MediaWatcher();
+
+        await _mediaWatcher.StartAsync();
+
+        if (!string.IsNullOrWhiteSpace(ConfigManager.Config.DiscordClientId))
+        {
+            _discordManager.Connect(ConfigManager.Config.DiscordClientId);
+            Console.Error.WriteLine("[GoodRP] Connected to Discord");
+        }
+        else
+        {
+            Console.Error.WriteLine("[GoodRP] No Discord Application ID configured");
+        }
+
+        _mediaWatcher.MediaChanged += OnMcpMediaChanged;
+        _mediaWatcher.MediaStopped += OnMcpMediaStopped;
+
+        var tasks = new List<Task>();
+
+        if (mcpMode)
+            tasks.Add(McpServer.RunAsync(_discordManager, _mediaWatcher));
+
+        if (apiMode)
+            tasks.Add(ApiServer.RunAsync(_discordManager, _mediaWatcher, args));
+
+        await Task.WhenAll(tasks);
+
+        _mediaWatcher.MediaChanged -= OnMcpMediaChanged;
+        _mediaWatcher.MediaStopped -= OnMcpMediaStopped;
+        _mediaWatcher?.Dispose();
+        _discordManager?.Dispose();
+    }
+
+    private static void OnMcpMediaChanged(MediaInfo media)
+    {
+        if (!ConfigManager.Config.AutoShowOnDiscord) return;
+        if (!_discordManager!.IsConnected) return;
+
+        var overrideType = ConfigManager.Config.ActivityTypeOverride;
+        Console.Error.WriteLine($"[GoodRP] Auto-trigger: {media.CleanTitle} - {media.Artist} (type={overrideType})");
+
+        _discordManager.SetPresence(media);
+    }
+
+    private static void OnMcpMediaStopped()
+    {
+        if (!ConfigManager.Config.AutoShowOnDiscord) return;
+        if (!_discordManager!.IsConnected) return;
+
+        Console.Error.WriteLine("[GoodRP] Auto-trigger: media stopped, clearing presence");
+        _discordManager.ClearPresence();
     }
 }
