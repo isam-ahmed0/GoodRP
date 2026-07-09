@@ -125,7 +125,11 @@ Get current configuration.
 ```json
 {
   "discord_client_id": "123456789",
-  "imgur_client_id": "abc123",
+  "image_providers": ["cloudinary", "discord", "postimage"],
+  "cloudinary_cloud_name": "mycloud",
+  "cloudinary_upload_preset": "goodrp_preset",
+  "discord_webhook_url": "https://discord.com/api/webhooks/...",
+  "enable_art_finder": true,
   "auto_show_on_discord": true,
   "show_album_art": true,
   "activity_type_override": "watching"
@@ -145,7 +149,10 @@ Update configuration.
   "show_album_art": false,
   "activity_type_override": "listening",
   "discord_client_id": "123456789",
-  "imgur_client_id": "abc123"
+  "image_providers": ["cloudinary", "discord", "postimage"],
+  "cloudinary_cloud_name": "mycloud",
+  "discord_webhook_url": "https://discord.com/api/webhooks/...",
+  "enable_art_finder": true
 }
 ```
 

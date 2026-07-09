@@ -134,7 +134,7 @@ public class DiscordManager : IDisposable
 
             if (!string.IsNullOrWhiteSpace(_currentImageUrl))
             {
-                presence.Assets.LargeImageUrl = _currentImageUrl;
+                presence.Assets.LargeImageKey = _currentImageUrl;
                 presence.Assets.LargeImageText = title;
             }
 

@@ -7,7 +7,7 @@ Lightweight Discord Rich Presence client for Windows. Auto-detects media playbac
 - **Auto-detection** — Works with Spotify, VLC, MPV, Chrome, Firefox, foobar2000, and any app using Windows SMTC
 - **Music & Video** — Shows "Listening to" for audio, "Watching" for video
 - **Real-time progress** — Timestamps update live as you play/seek
-- **Album art** — Extracts thumbnails and uploads to imgur
+- **Album art** — Two-phase approach: art finder (Deezer/iTunes keyword search) + art detector (SMTC thumbnail uploaded to Cloudinary/Discord CDN)
 - **Dark GUI** — Discord-style dark theme with connection panel and settings
 - **System tray** — Minimizes to tray, auto-hides when media stops/pauses
 - **Auto-show** — Optionally starts Discord RP automatically when media plays
@@ -24,7 +24,7 @@ Lightweight Discord Rich Presence client for Windows. Auto-detects media playbac
 3. Open GoodRP, paste the ID, click Connect
 4. Play music or video — GoodRP detects it automatically
 
-Optional: Register at https://api.imgur.com/oauth2/addclient for album art support.
+Optional: Set up Cloudinary (free account at https://cloudinary.com) with an unsigned upload preset for album art hosting. Discord webhook URL can be added as fallback. Art finder searches Deezer/iTunes automatically — no setup needed.
 
 ## Run Modes
 
@@ -112,7 +112,8 @@ GoodRP/
 │   ├── MainForm.cs              — Dark-themed GUI + tray icon
 │   ├── MediaWatcher.cs          — Windows SMTC media detection
 │   ├── DiscordManager.cs        — Discord RPC client
-│   ├── ImageUploader.cs         — Thumbnail → imgur upload
+│   ├── ImageUploader.cs         — Thumbnail → Cloudinary/Discord/PostImage upload
+│   ├── ArtFinderService.cs     — Album art via Deezer/iTunes API search
 │   ├── ConfigManager.cs         — Settings persistence
 │   ├── NativeMethods.cs         — P/Invoke for global hotkeys
 │   ├── HotkeyManager.cs         — Hotkey registration and handling
@@ -143,7 +144,8 @@ GoodRP/
 | UI | Windows Forms (dark theme) |
 | Discord RPC | DiscordRPC (forked, with Name property) |
 | Media Detection | Windows SMTC API |
-| Album Art | imgur API via HttpClient |
+| Album Art (upload) | Cloudinary API / Discord CDN / PostImage API |
+| Album Art (finder) | Deezer API + iTunes Search API |
 | MCP Server | ModelContextProtocol v1.4.0 (stdio transport) |
 | HTTP API | ASP.NET Core (Kestrel) |
 | Settings | JSON in `%AppData%\GoodRP\config.json` |

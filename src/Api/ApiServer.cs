@@ -149,9 +149,13 @@ public static class ApiServer
             return Results.Ok(new
             {
                 discord_client_id = c.DiscordClientId,
-                imgur_client_id = c.ImgurClientId,
-                auto_show_on_discord = c.AutoShowOnDiscord,
+                cloudinary_cloud_name = c.CloudinaryCloudName,
+                cloudinary_upload_preset = c.CloudinaryUploadPreset,
+                discord_webhook_url = c.DiscordWebhookUrl,
                 show_album_art = c.ShowAlbumArt,
+                enable_art_finder = c.EnableArtFinder,
+                image_providers = c.ImageProviders,
+                auto_show_on_discord = c.AutoShowOnDiscord,
                 activity_type_override = c.ActivityTypeOverride
             });
         });
@@ -164,12 +168,20 @@ public static class ApiServer
                 ConfigManager.Config.AutoShowOnDiscord = asv.GetBoolean();
             if (body.TryGetProperty("show_album_art", out var ssv))
                 ConfigManager.Config.ShowAlbumArt = ssv.GetBoolean();
+            if (body.TryGetProperty("enable_art_finder", out var eaf))
+                ConfigManager.Config.EnableArtFinder = eaf.GetBoolean();
             if (body.TryGetProperty("activity_type_override", out var atv))
                 ConfigManager.Config.ActivityTypeOverride = atv.GetString() ?? "Auto";
             if (body.TryGetProperty("discord_client_id", out var dcv))
                 ConfigManager.Config.DiscordClientId = dcv.GetString() ?? "";
-            if (body.TryGetProperty("imgur_client_id", out var icv))
-                ConfigManager.Config.ImgurClientId = icv.GetString() ?? "";
+            if (body.TryGetProperty("cloudinary_cloud_name", out var ccn))
+                ConfigManager.Config.CloudinaryCloudName = ccn.GetString() ?? "";
+            if (body.TryGetProperty("cloudinary_upload_preset", out var cup))
+                ConfigManager.Config.CloudinaryUploadPreset = cup.GetString() ?? "";
+            if (body.TryGetProperty("discord_webhook_url", out var dwu))
+                ConfigManager.Config.DiscordWebhookUrl = dwu.GetString() ?? "";
+            if (body.TryGetProperty("image_providers", out var ipv))
+                ConfigManager.Config.ImageProviders = JsonSerializer.Deserialize<List<string>>(ipv.GetRawText()) ?? new() { "cloudinary", "discord", "postimage" };
 
             ConfigManager.Save();
             return Results.Ok(new { success = true });

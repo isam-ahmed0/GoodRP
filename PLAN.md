@@ -21,7 +21,7 @@ CustomRP ─┘    (same NuGet package, different apps)
 - **Auto-detection** — Works with Spotify, VLC, MPV, Chrome (YouTube, SoundCloud), Firefox, Windows Media Player, foobar2000, and any app that uses Windows SMTC
 - **Music & Video** — Detects both audio and video playback, shows "Listening to" for music, "Watching" for videos/movies
 - **Real-time timestamps** — Progress bar updates live when you skip forward/backward in the player
-- **Album art** — Extracts thumbnail from media session, uploads to imgur, shows as Discord RP image
+- **Album art** — Extracts thumbnail from media session, uploads to Cloudinary/Discord/PostImage, shows as Discord RP image
 - **Full metadata** — Title, Artist, Album Name, Elapsed Time, Progress Bar
 - **Dark GUI** — Discord-style dark theme with connection panel, now playing display, and settings
 - **System tray** — Minimizes to tray, runs in background
@@ -59,7 +59,7 @@ CustomRP ─┘    (same NuGet package, different apps)
 | UI | Windows Forms (dark theme) | Full GUI + system tray |
 | Discord RPC | `DiscordRichPresence` NuGet | Same library as CustomRP, well-supported |
 | Media Detection | `Windows.Media.Control` | Built-in Windows SMTC API, no polling |
-| Album Art Upload | Raw `HttpClient` to imgur API | No extra NuGet dependency |
+| Album Art Upload | Raw `HttpClient` to Cloudinary/Discord/PostImage APIs | Providers for flexible upload |
 | Settings | JSON in `%AppData%\GoodRP\config.json` | Simple, portable |
 | Target Framework | `net9.0-windows10.0.19041.0` | Windows 10 1903+ / Windows 11 |
 
@@ -76,11 +76,13 @@ CustomRP ─┘    (same NuGet package, different apps)
    ↓
 5. User clicks "Show on Discord" (or auto-show if enabled)
    ↓
-6. Album art uploaded to imgur (if Imgur ID configured)
+6. Album art uploaded via configured provider (Cloudinary/Discord/PostImage)
+    ↓
+7. ArtFinderService searches for art if none found, fetches from Deezer/Spotify/Cover Art Archive
+    ↓
+8. Discord RPC updated with full metadata + real-time progress bar
    ↓
-7. Discord RPC updated with full metadata + real-time progress bar
-   ↓
-8. When user skips/seeks, timeline updates → Discord RP refreshes instantly
+9. When user skips/seeks, timeline updates → Discord RP refreshes instantly
 ```
 
 ## Project Structure
@@ -96,8 +98,9 @@ GoodRP/
     ├── TrayIcon.cs         — System tray icon (legacy, now part of MainForm)
     ├── DiscordManager.cs   — DiscordRPC client (connect/set/clear/disconnect)
     ├── MediaWatcher.cs     — SMTC session monitoring + events
-    ├── ImageUploader.cs    — Extracts thumbnail → uploads to imgur
-    ├── ConfigManager.cs    — Settings (App ID, imgur ID, preferences)
+    ├── ImageUploader.cs    — Extracts thumbnail → uploads to Cloudinary/Discord/PostImage
+    ├── ArtFinderService.cs — Fetches album art from external APIs (Deezer, Spotify, Cover Art Archive)
+    ├── ConfigManager.cs    — Settings (App ID, image provider, preferences)
     └── SettingsForm.cs     — Settings dialog (legacy, now part of MainForm)
 ```
 
@@ -143,8 +146,8 @@ GoodRP listens to the `TimelineChanged` event from Windows SMTC. When you skip f
    - Paste Application ID → Click Connect
    - Status should show "Connected as [username]"
 3. **(Optional) Album Art**:
-   - Register at https://api.imgur.com/oauth2/addclient
-   - Paste Imgur Client ID in GoodRP settings
+   - GoodRP supports multiple image providers: Cloudinary, Discord CDN, PostImage
+   - Configure your preferred provider in GoodRP settings (e.g., Cloudinary cloud name + upload preset, or Discord webhook URL)
 
 ## Build & Run
 
@@ -176,7 +179,8 @@ dotnet publish src/GoodRP.csproj -c Release --self-contained -r win-x64
 - [x] MediaWatcher (SMTC detection)
 - [x] DiscordManager (RPC client)
 - [x] MainForm (dark GUI)
-- [x] ImageUploader (thumbnail → imgur)
+- [x] ImageUploader (thumbnail → Cloudinary/Discord/PostImage)
+- [x] ArtFinderService (auto-fetch album art from Deezer/Spotify/Cover Art Archive)
 - [x] ConfigManager (settings)
 - [x] Real-time timestamp updates
 - [ ] VLC/MPV native support (planned)

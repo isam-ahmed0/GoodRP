@@ -1,5 +1,5 @@
 using System.Net.Http.Headers;
-using System.Text;
+using System.Text.Json;
 using Windows.Storage.Streams;
 
 namespace GoodRP;
@@ -8,12 +8,10 @@ public static class ImageUploader
 {
     private static readonly HttpClient _httpClient = new();
     private static readonly Dictionary<string, string> _cache = new();
-    private static string _lastKey = "";
 
     public static async Task<string?> UploadThumbnailAsync(IRandomAccessStreamReference? thumbnail, string cacheKey)
     {
         if (thumbnail == null) return null;
-        if (string.IsNullOrWhiteSpace(ConfigManager.Config.ImgurClientId)) return null;
 
         if (_cache.TryGetValue(cacheKey, out var cached))
             return cached;
@@ -27,7 +25,7 @@ public static class ImageUploader
 
             if (imageBytes.Length == 0) return null;
 
-            return await UploadToImgurAsync(imageBytes, cacheKey);
+            return await UploadToProvidersAsync(imageBytes, cacheKey);
         }
         catch
         {
@@ -35,37 +33,169 @@ public static class ImageUploader
         }
     }
 
-    private static async Task<string?> UploadToImgurAsync(byte[] imageData, string cacheKey)
+    private static async Task<string?> UploadToProvidersAsync(byte[] imageData, string cacheKey)
+    {
+        var providers = ConfigManager.Config.ImageProviders;
+        if (providers == null || providers.Count == 0) return null;
+
+        foreach (var provider in providers)
+        {
+            string? url = provider.ToLowerInvariant() switch
+            {
+                "telegraph" => await UploadToTelegraphAsync(imageData),
+                "cloudinary" => await UploadToCloudinaryAsync(imageData),
+                "discord" => await UploadToDiscordCdnAsync(imageData),
+                "postimage" => await UploadToPostImageAsync(imageData),
+                _ => null
+            };
+
+            if (url != null)
+            {
+                _cache[cacheKey] = url;
+                return url;
+            }
+        }
+
+        return null;
+    }
+
+    private static async Task<string?> UploadToTelegraphAsync(byte[] imageData)
     {
         try
         {
-            var clientId = ConfigManager.Config.ImgurClientId;
-            var base64 = Convert.ToBase64String(imageData);
+            var (mime, ext) = DetectFormat(imageData);
+            var fileContent = new ByteArrayContent(imageData);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(mime);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.imgur.com/3/image");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Client-ID", clientId);
-
-            var content = new MultipartFormDataContent
+            using var content = new MultipartFormDataContent
             {
-                { new StringContent(base64), "image" },
-                { new StringContent("base64"), "type" }
+                { fileContent, "file", $"img.{ext}" }
             };
-            request.Content = content;
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.PostAsync("https://telegra.ph/upload", content);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.GetArrayLength() > 0)
+                {
+                    var src = doc.RootElement[0].GetProperty("src").GetString();
+                    if (src != null)
+                        return $"https://telegra.ph{src}";
+                }
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    private static async Task<string?> UploadToCloudinaryAsync(byte[] imageData)
+    {
+        var cloudName = ConfigManager.Config.CloudinaryCloudName;
+        var uploadPreset = ConfigManager.Config.CloudinaryUploadPreset;
+        if (string.IsNullOrWhiteSpace(cloudName) || string.IsNullOrWhiteSpace(uploadPreset))
+            return null;
+
+        try
+        {
+            var (mime, ext) = DetectFormat(imageData);
+            var fileContent = new ByteArrayContent(imageData);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(mime);
+
+            using var content = new MultipartFormDataContent
+            {
+                { fileContent, "file", $"album_art.{ext}" },
+                { new StringContent(uploadPreset), "upload_preset" }
+            };
+
+            var response = await _httpClient.PostAsync($"https://api.cloudinary.com/v1_1/{cloudName}/image/upload", content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var linkStart = responseBody.IndexOf("\"link\":\"") + 8;
-                var linkEnd = responseBody.IndexOf("\"", linkStart);
-                if (linkStart > 8 && linkEnd > linkStart)
+                using var doc = JsonDocument.Parse(responseBody);
+                var url = doc.RootElement.GetProperty("secure_url").GetString();
+                return url;
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    private static (string mime, string ext) DetectFormat(byte[] data)
+    {
+        if (data.Length < 4) return ("image/png", "png");
+        if (data[0] == 0xFF && data[1] == 0xD8) return ("image/jpeg", "jpg");
+        if (data[0] == 0x89 && data[1] == 0x50) return ("image/png", "png");
+        if (data[0] == 0x47 && data[1] == 0x49) return ("image/gif", "gif");
+        if (data[0] == 0x42 && data[1] == 0x4D) return ("image/bmp", "bmp");
+        if (data[0] == 0x52 && data[1] == 0x49) return ("image/webp", "webp");
+        return ("image/png", "png");
+    }
+
+    private static async Task<string?> UploadToDiscordCdnAsync(byte[] imageData)
+    {
+        var webhookUrl = ConfigManager.Config.DiscordWebhookUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(webhookUrl))
+            return null;
+
+        try
+        {
+            var (mime, ext) = DetectFormat(imageData);
+            var fileContent = new ByteArrayContent(imageData);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(mime);
+
+            using var content = new MultipartFormDataContent
+            {
+                { fileContent, "file", $"album_art.{ext}" }
+            };
+
+            var response = await _httpClient.PostAsync($"{webhookUrl}?wait=true", content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(responseBody);
+                var attachments = doc.RootElement.GetProperty("attachments");
+                if (attachments.GetArrayLength() > 0)
                 {
-                    var url = responseBody[linkStart..linkEnd];
-                    _cache[cacheKey] = url;
-                    _lastKey = cacheKey;
+                    var url = attachments[0].GetProperty("url").GetString();
                     return url;
                 }
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    private static async Task<string?> UploadToPostImageAsync(byte[] imageData)
+    {
+        var apiKey = ConfigManager.Config.PostImageApiKey;
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return null;
+
+        try
+        {
+            using var content = new MultipartFormDataContent
+            {
+                { new ByteArrayContent(imageData), "file", "album_art.png" },
+                { new StringContent(apiKey), "key" }
+            };
+
+            var response = await _httpClient.PostAsync("https://postimg.cc/api/1/upload", content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                using var doc = JsonDocument.Parse(responseBody);
+                if (doc.RootElement.TryGetProperty("url", out var urlProp))
+                    return urlProp.GetString();
+                if (doc.RootElement.TryGetProperty("image", out var imgProp) && imgProp.TryGetProperty("url", out var imgUrl))
+                    return imgUrl.GetString();
             }
         }
         catch { }

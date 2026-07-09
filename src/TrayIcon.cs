@@ -81,10 +81,18 @@ public class TrayIcon : IDisposable
 
         string? imageUrl = null;
 
-        if (ConfigManager.Config.ShowAlbumArt && media.Thumbnail != null)
+        if (ConfigManager.Config.ShowAlbumArt)
         {
             var cacheKey = $"{media.Title}_{media.Artist}";
-            imageUrl = await ImageUploader.UploadThumbnailAsync(media.Thumbnail, cacheKey);
+
+            if (ConfigManager.Config.EnableArtFinder)
+                imageUrl = await ArtFinderService.FindArtAsync(media.Title, media.Artist, media.Album);
+
+            imageUrl ??= await ImageUploader.UploadThumbnailAsync(media.Thumbnail, cacheKey);
+
+            if (imageUrl != null && MainForm.IsDiscordCdnUrl(imageUrl))
+                imageUrl = null;
+
             ImageUploader.TrimCache();
         }
 
