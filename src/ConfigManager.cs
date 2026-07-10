@@ -4,6 +4,9 @@ namespace GoodRP;
 
 public class AppConfig
 {
+    // GUI version: "default" (MainForm) | "9xt" (ModernMainForm)
+    public string GuiVersion { get; set; } = "default";
+
     public string DiscordClientId { get; set; } = "";
     public bool AutoShowOnDiscord { get; set; } = false;
     public bool ShowAlbumArt { get; set; } = true;
@@ -27,6 +30,16 @@ public class AppConfig
     public string? OnPlaybackStateChangedScript { get; set; }
 
     public int ScriptTimeoutMs { get; set; } = 10000;
+
+    // Multiple Discord App IDs for quick-switching (9XT GUI)
+    public List<DiscordAppEntry> DiscordAppIds { get; set; } = new();
+    public int ActiveAppIdIndex { get; set; } = 0;
+}
+
+public class DiscordAppEntry
+{
+    public string Name { get; set; } = "";
+    public string Id { get; set; } = "";
 }
 
 public static class ConfigManager

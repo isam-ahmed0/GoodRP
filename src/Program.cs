@@ -24,6 +24,8 @@ static class Program
         if (!createdNew)
         {
             var hwnd = NativeMethods.FindWindow(null, "GoodRP - Discord Rich Presence");
+            if (hwnd == IntPtr.Zero)
+                hwnd = NativeMethods.FindWindow(null, "GoodRP 9XT");
             if (hwnd != IntPtr.Zero)
             {
                 NativeMethods.ShowWindow(hwnd, 9);
@@ -39,7 +41,11 @@ static class Program
         _discordManager = new DiscordManager();
         _mediaWatcher = new MediaWatcher();
 
-        var mainForm = new MainForm(_mediaWatcher, _discordManager);
+        Form mainForm = string.Equals(ConfigManager.Config.GuiVersion, "9xt", StringComparison.OrdinalIgnoreCase)
+            ? new ModernMainForm(_mediaWatcher, _discordManager)
+            : new MainForm(_mediaWatcher, _discordManager);
+
+        LogService.Log("App", "GoodRP started");
 
         await _mediaWatcher.StartAsync();
 

@@ -39,6 +39,7 @@ public class MainForm : Form
     private PictureBox _picAlbumArt = new();
     private Label _lblShowHotkey = new();
     private Label _lblHideHotkey = new();
+    private ComboBox _cboGui = new();
 
     private MediaInfo? _currentMedia;
     private string? _pendingImageUrl;
@@ -144,7 +145,7 @@ public class MainForm : Form
 
         _grpSettings.Text = "Settings";
         _grpSettings.Location = new Point(12, 290);
-        _grpSettings.Size = new Size(440, 265);
+        _grpSettings.Size = new Size(440, 295);
         _grpSettings.ForeColor = Color.White;
         _grpSettings.BackColor = Color.FromArgb(40, 40, 40);
 
@@ -226,7 +227,16 @@ public class MainForm : Form
         _lblHideHotkey.AutoSize = true;
         _lblHideHotkey.ForeColor = Color.FromArgb(88, 101, 242);
 
-        _grpSettings.Controls.AddRange(new Control[] { lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, _chkShowAlbumArt, _chkAutoShow, _chkMcpServer, _chkEnableArtFinder, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey });
+        var lblGui = new Label { Text = "GUI version:", Location = new Point(15, 247), AutoSize = true, ForeColor = Color.LightGray };
+        _cboGui.Location = new Point(120, 244);
+        _cboGui.Size = new Size(200, 23);
+        _cboGui.BackColor = Color.FromArgb(50, 50, 50);
+        _cboGui.ForeColor = Color.White;
+        _cboGui.DropDownStyle = ComboBoxStyle.DropDownList;
+        _cboGui.Items.AddRange(new object[] { "Classic", "9XT (Modern)" });
+        _cboGui.SelectedIndexChanged += CboGui_SelectedIndexChanged;
+
+        _grpSettings.Controls.AddRange(new Control[] { lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, _chkShowAlbumArt, _chkAutoShow, _chkMcpServer, _chkEnableArtFinder, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey, lblGui, _cboGui });
 
         _lblCurrentMedia.Text = "Discord RP: Not showing";
         _lblCurrentMedia.Location = new Point(12, 565);
@@ -310,6 +320,25 @@ public class MainForm : Form
 
         _lblShowHotkey.Text = ConfigManager.Config.ShowHotkey;
         _lblHideHotkey.Text = ConfigManager.Config.HideHotkey;
+
+        _cboGui.SelectedIndex = string.Equals(ConfigManager.Config.GuiVersion, "9xt", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+    }
+
+    private void CboGui_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        var newVersion = _cboGui.SelectedIndex == 1 ? "9xt" : "default";
+        if (string.Equals(newVersion, ConfigManager.Config.GuiVersion, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        ConfigManager.Config.GuiVersion = newVersion;
+        ConfigManager.Save();
+
+        MessageBox.Show(
+            "GUI preference saved. Restart GoodRP (close and reopen) to switch to the " +
+            (newVersion == "9xt" ? "9XT modern" : "classic") + " interface.",
+            "GoodRP",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
     }
 
     private void SaveSettings()
