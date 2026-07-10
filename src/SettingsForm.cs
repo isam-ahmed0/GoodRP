@@ -6,7 +6,6 @@ public class SettingsForm : Form
     private TextBox _txtDiscordClientId = new();
     private TextBox _txtCloudName = new();
     private TextBox _txtCloudPreset = new();
-    private TextBox _txtDiscordWebhook = new();
     private CheckBox _chkAutoShow = new();
     private CheckBox _chkShowAlbumArt = new();
     private CheckBox _chkEnableArtFinder = new();
@@ -73,19 +72,8 @@ public class SettingsForm : Form
         _txtCloudPreset.Size = new Size(185, 23);
         _txtCloudPreset.PlaceholderText = "Unsigned preset";
 
-        var lblDiscordWebhook = new Label
-        {
-            Text = "Discord Webhook (fallback):",
-            Location = new Point(15, 130),
-            AutoSize = true
-        };
-
-        _txtDiscordWebhook.Location = new Point(15, 152);
-        _txtDiscordWebhook.Size = new Size(370, 23);
-        _txtDiscordWebhook.PlaceholderText = "https://discord.com/api/webhooks/... (optional)";
-
         _chkShowAlbumArt.Text = "Show album art on Discord";
-        _chkShowAlbumArt.Location = new Point(15, 190);
+        _chkShowAlbumArt.Location = new Point(15, 150);
         _chkShowAlbumArt.AutoSize = true;
 
         _chkEnableArtFinder.Text = "Art finder fallback (Deezer/iTunes)";
@@ -160,7 +148,6 @@ public class SettingsForm : Form
         {
             lblDiscord, _txtDiscordClientId,
             lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset,
-            lblDiscordWebhook, _txtDiscordWebhook,
             _chkShowAlbumArt, _chkEnableArtFinder, _chkAutoShow, _chkMcpServer,
             lblActivity, _rbAuto, _rbListening, _rbWatching,
             lblNotifications, _chkUseNotifications,
@@ -176,7 +163,6 @@ public class SettingsForm : Form
         _txtDiscordClientId.Text = ConfigManager.Config.DiscordClientId;
         _txtCloudName.Text = ConfigManager.Config.CloudinaryCloudName;
         _txtCloudPreset.Text = ConfigManager.Config.CloudinaryUploadPreset;
-        _txtDiscordWebhook.Text = ConfigManager.Config.DiscordWebhookUrl;
         _chkAutoShow.Checked = ConfigManager.Config.AutoShowOnDiscord;
         _chkShowAlbumArt.Checked = ConfigManager.Config.ShowAlbumArt;
         _chkEnableArtFinder.Checked = ConfigManager.Config.EnableArtFinder;
@@ -231,7 +217,6 @@ public class SettingsForm : Form
         ConfigManager.Config.DiscordClientId = _txtDiscordClientId.Text.Trim();
         ConfigManager.Config.CloudinaryCloudName = _txtCloudName.Text.Trim();
         ConfigManager.Config.CloudinaryUploadPreset = _txtCloudPreset.Text.Trim();
-        ConfigManager.Config.DiscordWebhookUrl = _txtDiscordWebhook.Text.Trim();
         ConfigManager.Config.AutoShowOnDiscord = _chkAutoShow.Checked;
         ConfigManager.Config.ShowAlbumArt = _chkShowAlbumArt.Checked;
         ConfigManager.Config.EnableArtFinder = _chkEnableArtFinder.Checked;

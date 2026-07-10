@@ -19,9 +19,14 @@ public class AppConfig
     public List<string> ImageProviders { get; set; } = new() { "telegraph" };
     public string CloudinaryCloudName { get; set; } = "";
     public string CloudinaryUploadPreset { get; set; } = "";
-    public string DiscordWebhookUrl { get; set; } = "";
     public string PostImageApiKey { get; set; } = "";
     public bool EnableArtFinder { get; set; } = true;
+
+    public string? OnMediaChangedScript { get; set; }
+    public string? OnMediaStoppedScript { get; set; }
+    public string? OnPlaybackStateChangedScript { get; set; }
+
+    public int ScriptTimeoutMs { get; set; } = 10000;
 }
 
 public static class ConfigManager
@@ -52,23 +57,12 @@ public static class ConfigManager
         {
             Config = new AppConfig();
         }
-
-        if (Config.ImageProviders.RemoveAll(p => p.Equals("discord", StringComparison.OrdinalIgnoreCase)) > 0)
-        {
-            if (!Config.ImageProviders.Contains("telegraph"))
-                Config.ImageProviders.Insert(0, "telegraph");
-            Save();
-        }
     }
 
     public static void Save()
     {
         try
         {
-            var changed = Config.ImageProviders.RemoveAll(p => p.Equals("discord", StringComparison.OrdinalIgnoreCase)) > 0;
-            if (changed && !Config.ImageProviders.Contains("telegraph"))
-                Config.ImageProviders.Insert(0, "telegraph");
-
             Directory.CreateDirectory(ConfigDir);
             var json = JsonSerializer.Serialize(Config, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(ConfigPath, json);

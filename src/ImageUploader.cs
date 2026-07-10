@@ -44,7 +44,6 @@ public static class ImageUploader
             {
                 "telegraph" => await UploadToTelegraphAsync(imageData),
                 "cloudinary" => await UploadToCloudinaryAsync(imageData),
-                "discord" => await UploadToDiscordCdnAsync(imageData),
                 "postimage" => await UploadToPostImageAsync(imageData),
                 _ => null
             };
@@ -134,42 +133,6 @@ public static class ImageUploader
         if (data[0] == 0x42 && data[1] == 0x4D) return ("image/bmp", "bmp");
         if (data[0] == 0x52 && data[1] == 0x49) return ("image/webp", "webp");
         return ("image/png", "png");
-    }
-
-    private static async Task<string?> UploadToDiscordCdnAsync(byte[] imageData)
-    {
-        var webhookUrl = ConfigManager.Config.DiscordWebhookUrl?.Trim();
-        if (string.IsNullOrWhiteSpace(webhookUrl))
-            return null;
-
-        try
-        {
-            var (mime, ext) = DetectFormat(imageData);
-            var fileContent = new ByteArrayContent(imageData);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(mime);
-
-            using var content = new MultipartFormDataContent
-            {
-                { fileContent, "file", $"album_art.{ext}" }
-            };
-
-            var response = await _httpClient.PostAsync($"{webhookUrl}?wait=true", content);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (response.IsSuccessStatusCode)
-            {
-                using var doc = JsonDocument.Parse(responseBody);
-                var attachments = doc.RootElement.GetProperty("attachments");
-                if (attachments.GetArrayLength() > 0)
-                {
-                    var url = attachments[0].GetProperty("url").GetString();
-                    return url;
-                }
-            }
-        }
-        catch { }
-
-        return null;
     }
 
     private static async Task<string?> UploadToPostImageAsync(byte[] imageData)

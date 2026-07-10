@@ -94,7 +94,6 @@ public class PresenceTools
             discord_client_id = c.DiscordClientId,
             cloudinary_cloud_name = c.CloudinaryCloudName,
             cloudinary_upload_preset = c.CloudinaryUploadPreset,
-            discord_webhook_url = c.DiscordWebhookUrl,
             show_album_art = c.ShowAlbumArt,
             enable_art_finder = c.EnableArtFinder,
             image_providers = c.ImageProviders,

@@ -20,6 +20,18 @@ static class Program
             return;
         }
 
+        using var mutex = new Mutex(true, "GoodRP_SingleInstance", out bool createdNew);
+        if (!createdNew)
+        {
+            var hwnd = NativeMethods.FindWindow(null, "GoodRP - Discord Rich Presence");
+            if (hwnd != IntPtr.Zero)
+            {
+                NativeMethods.ShowWindow(hwnd, 9);
+                NativeMethods.SetForegroundWindow(hwnd);
+            }
+            return;
+        }
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -98,5 +110,14 @@ static class Program
 
         Console.Error.WriteLine("[GoodRP] Auto-trigger: media stopped, clearing presence");
         _discordManager.ClearPresence();
+    }
+
+    public static string GetEstimatedType(string appName)
+    {
+        var lower = appName.ToLowerInvariant();
+        return lower.Contains("video") || lower.Contains("movie") ||
+               lower.Contains("vlc") || lower.Contains("mpv")
+            ? "watching"
+            : "listening";
     }
 }

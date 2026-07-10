@@ -17,7 +17,6 @@ public class MainForm : Form
     private TextBox _txtDiscordId = new();
     private TextBox _txtCloudName = new();
     private TextBox _txtCloudPreset = new();
-    private TextBox _txtDiscordWebhook = new();
     private CheckBox _chkAutoShow = new();
     private CheckBox _chkShowAlbumArt = new();
     private CheckBox _chkEnableArtFinder = new();
@@ -58,9 +57,9 @@ public class MainForm : Form
     private void InitializeUI()
     {
         Text = "GoodRP - Discord Rich Presence";
-        Size = new Size(480, 610);
-        MinimumSize = new Size(480, 610);
-        MaximumSize = new Size(480, 610);
+        Size = new Size(480, 620);
+        MinimumSize = new Size(480, 620);
+        MaximumSize = new Size(480, 620);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -162,81 +161,74 @@ public class MainForm : Form
         _txtCloudPreset.ForeColor = Color.White;
         _txtCloudPreset.PlaceholderText = "Cloudinary upload preset";
 
-        var lblDiscordWebhook = new Label { Text = "Webhook URL:", Location = new Point(15, 78), AutoSize = true, ForeColor = Color.LightGray };
-        _txtDiscordWebhook.Location = new Point(120, 75);
-        _txtDiscordWebhook.Size = new Size(300, 23);
-        _txtDiscordWebhook.BackColor = Color.FromArgb(50, 50, 50);
-        _txtDiscordWebhook.ForeColor = Color.White;
-        _txtDiscordWebhook.PlaceholderText = "Discord webhook (optional fallback)";
-
         _chkShowAlbumArt.Text = "Show album art";
-        _chkShowAlbumArt.Location = new Point(15, 110);
+        _chkShowAlbumArt.Location = new Point(15, 82);
         _chkShowAlbumArt.AutoSize = true;
         _chkShowAlbumArt.ForeColor = Color.LightGray;
 
         _chkAutoShow.Text = "Auto-show on Discord";
-        _chkAutoShow.Location = new Point(15, 135);
+        _chkAutoShow.Location = new Point(15, 107);
         _chkAutoShow.AutoSize = true;
         _chkAutoShow.ForeColor = Color.LightGray;
 
         _chkMcpServer.Text = "Enable MCP Server (for AI agents)";
-        _chkMcpServer.Location = new Point(230, 110);
+        _chkMcpServer.Location = new Point(230, 82);
         _chkMcpServer.AutoSize = true;
         _chkMcpServer.ForeColor = Color.LightGray;
 
         _chkEnableArtFinder.Text = "Art finder fallback";
-        _chkEnableArtFinder.Location = new Point(230, 135);
+        _chkEnableArtFinder.Location = new Point(230, 107);
         _chkEnableArtFinder.AutoSize = true;
         _chkEnableArtFinder.ForeColor = Color.LightGray;
 
-        var lblActivity = new Label { Text = "Activity:", Location = new Point(15, 165), AutoSize = true, ForeColor = Color.LightGray };
+        var lblActivity = new Label { Text = "Activity:", Location = new Point(15, 137), AutoSize = true, ForeColor = Color.LightGray };
 
         _rbAuto.Text = "Auto";
-        _rbAuto.Location = new Point(85, 163);
+        _rbAuto.Location = new Point(85, 135);
         _rbAuto.AutoSize = true;
         _rbAuto.ForeColor = Color.LightGray;
         _rbAuto.Checked = true;
 
         _rbListening.Text = "Listening";
-        _rbListening.Location = new Point(140, 163);
+        _rbListening.Location = new Point(140, 135);
         _rbListening.AutoSize = true;
         _rbListening.ForeColor = Color.LightGray;
 
         _rbWatching.Text = "Watching";
-        _rbWatching.Location = new Point(240, 163);
+        _rbWatching.Location = new Point(240, 135);
         _rbWatching.AutoSize = true;
         _rbWatching.ForeColor = Color.LightGray;
 
-        var lblNotifications = new Label { Text = "Notifications:", Location = new Point(15, 195), AutoSize = true, ForeColor = Color.LightGray };
+        var lblNotifications = new Label { Text = "Notifications:", Location = new Point(15, 167), AutoSize = true, ForeColor = Color.LightGray };
 
         _chkUseNotifications.Text = "Show balloon notification";
-        _chkUseNotifications.Location = new Point(15, 215);
+        _chkUseNotifications.Location = new Point(15, 187);
         _chkUseNotifications.AutoSize = true;
         _chkUseNotifications.ForeColor = Color.LightGray;
 
-        var lblHotkeys = new Label { Text = "Hotkeys:", Location = new Point(230, 195), AutoSize = true, ForeColor = Color.LightGray };
+        var lblHotkeys = new Label { Text = "Hotkeys:", Location = new Point(230, 167), AutoSize = true, ForeColor = Color.LightGray };
 
         _chkUseHotkeys.Text = "Enable global hotkeys";
-        _chkUseHotkeys.Location = new Point(230, 215);
+        _chkUseHotkeys.Location = new Point(230, 187);
         _chkUseHotkeys.AutoSize = true;
         _chkUseHotkeys.ForeColor = Color.LightGray;
 
-        var lblShowKey = new Label { Text = "Show:", Location = new Point(15, 245), AutoSize = true, ForeColor = Color.LightGray };
+        var lblShowKey = new Label { Text = "Show:", Location = new Point(15, 217), AutoSize = true, ForeColor = Color.LightGray };
         _lblShowHotkey.Text = ConfigManager.Config.ShowHotkey;
-        _lblShowHotkey.Location = new Point(65, 245);
+        _lblShowHotkey.Location = new Point(65, 217);
         _lblShowHotkey.AutoSize = true;
         _lblShowHotkey.ForeColor = Color.FromArgb(88, 101, 242);
 
-        var lblHideKey = new Label { Text = "Hide:", Location = new Point(150, 245), AutoSize = true, ForeColor = Color.LightGray };
+        var lblHideKey = new Label { Text = "Hide:", Location = new Point(150, 217), AutoSize = true, ForeColor = Color.LightGray };
         _lblHideHotkey.Text = ConfigManager.Config.HideHotkey;
-        _lblHideHotkey.Location = new Point(200, 245);
+        _lblHideHotkey.Location = new Point(200, 217);
         _lblHideHotkey.AutoSize = true;
         _lblHideHotkey.ForeColor = Color.FromArgb(88, 101, 242);
 
-        _grpSettings.Controls.AddRange(new Control[] { lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, lblDiscordWebhook, _txtDiscordWebhook, _chkShowAlbumArt, _chkAutoShow, _chkMcpServer, _chkEnableArtFinder, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey });
+        _grpSettings.Controls.AddRange(new Control[] { lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, _chkShowAlbumArt, _chkAutoShow, _chkMcpServer, _chkEnableArtFinder, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey });
 
         _lblCurrentMedia.Text = "Discord RP: Not showing";
-        _lblCurrentMedia.Location = new Point(12, 545);
+        _lblCurrentMedia.Location = new Point(12, 565);
         _lblCurrentMedia.Size = new Size(440, 20);
         _lblCurrentMedia.ForeColor = Color.Gray;
         _lblCurrentMedia.TextAlign = ContentAlignment.MiddleCenter;
@@ -289,6 +281,13 @@ public class MainForm : Form
         _rbAuto.CheckedChanged += OnActivityTypeChanged;
         _rbListening.CheckedChanged += OnActivityTypeChanged;
         _rbWatching.CheckedChanged += OnActivityTypeChanged;
+
+        _chkAutoShow.CheckedChanged += (s, e) => SaveSettings();
+        _chkShowAlbumArt.CheckedChanged += (s, e) => SaveSettings();
+        _chkEnableArtFinder.CheckedChanged += (s, e) => SaveSettings();
+        _chkMcpServer.CheckedChanged += (s, e) => SaveSettings();
+        _chkUseHotkeys.CheckedChanged += (s, e) => SaveSettings();
+        _chkUseNotifications.CheckedChanged += (s, e) => SaveSettings();
     }
 
     private void LoadSettings()
@@ -296,7 +295,6 @@ public class MainForm : Form
         _txtDiscordId.Text = ConfigManager.Config.DiscordClientId;
         _txtCloudName.Text = ConfigManager.Config.CloudinaryCloudName;
         _txtCloudPreset.Text = ConfigManager.Config.CloudinaryUploadPreset;
-        _txtDiscordWebhook.Text = ConfigManager.Config.DiscordWebhookUrl;
         _chkAutoShow.Checked = ConfigManager.Config.AutoShowOnDiscord;
         _chkShowAlbumArt.Checked = ConfigManager.Config.ShowAlbumArt;
         _chkEnableArtFinder.Checked = ConfigManager.Config.EnableArtFinder;
@@ -318,7 +316,6 @@ public class MainForm : Form
         ConfigManager.Config.DiscordClientId = _txtDiscordId.Text.Trim();
         ConfigManager.Config.CloudinaryCloudName = _txtCloudName.Text.Trim();
         ConfigManager.Config.CloudinaryUploadPreset = _txtCloudPreset.Text.Trim();
-        ConfigManager.Config.DiscordWebhookUrl = _txtDiscordWebhook.Text.Trim();
         ConfigManager.Config.AutoShowOnDiscord = _chkAutoShow.Checked;
         ConfigManager.Config.ShowAlbumArt = _chkShowAlbumArt.Checked;
         ConfigManager.Config.EnableArtFinder = _chkEnableArtFinder.Checked;
@@ -398,10 +395,49 @@ public class MainForm : Form
         {
             ShowTrayNotification(media.CleanTitle, media.Artist);
         }
+
+        if (!string.IsNullOrEmpty(imageUrl) && (imageUrl!.StartsWith("http")))
+        {
+            _ = LoadAlbumArtIntoGuiAsync(imageUrl);
+        }
+
+        ScriptingService.RunScript(ConfigManager.Config.OnMediaChangedScript, media);
+    }
+
+    private async Task LoadAlbumArtIntoGuiAsync(string url)
+    {
+        try
+        {
+            using var http = new HttpClient();
+            var bytes = await http.GetByteArrayAsync(url);
+            using var ms = new MemoryStream(bytes);
+            var img = Image.FromStream(ms);
+
+            if (InvokeRequired)
+            {
+                Invoke(() =>
+                {
+                    _picAlbumArt.Image?.Dispose();
+                    _picAlbumArt.Image = img;
+                });
+            }
+            else
+            {
+                _picAlbumArt.Image?.Dispose();
+                _picAlbumArt.Image = img;
+            }
+        }
+        catch
+        {
+            // Ignore album art load failures
+        }
     }
 
     private void OnPlaybackStateChanged(MediaPlaybackState state)
     {
+        if (_currentMedia != null)
+            ScriptingService.RunScript(ConfigManager.Config.OnPlaybackStateChangedScript, _currentMedia, state);
+
         if (state == MediaPlaybackState.Paused)
         {
             _discordManager.ClearPresence();
@@ -457,6 +493,8 @@ public class MainForm : Form
         _currentMedia = null;
         _pendingImageUrl = null;
         _discordManager.ClearPresence();
+
+        ScriptingService.OnMediaStopped(ConfigManager.Config.OnMediaStoppedScript);
 
         if (InvokeRequired)
         {

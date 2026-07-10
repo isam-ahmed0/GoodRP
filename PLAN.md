@@ -21,11 +21,15 @@ CustomRP ─┘    (same NuGet package, different apps)
 - **Auto-detection** — Works with Spotify, VLC, MPV, Chrome (YouTube, SoundCloud), Firefox, Windows Media Player, foobar2000, and any app that uses Windows SMTC
 - **Music & Video** — Detects both audio and video playback, shows "Listening to" for music, "Watching" for videos/movies
 - **Real-time timestamps** — Progress bar updates live when you skip forward/backward in the player
-- **Album art** — Extracts thumbnail from media session, uploads to Cloudinary/Discord/PostImage, shows as Discord RP image
+- **Album art** — Extracts thumbnail from media session, uploads to Telegraph/Cloudinary/PostImage, shows as Discord RP image
 - **Full metadata** — Title, Artist, Album Name, Elapsed Time, Progress Bar
 - **Dark GUI** — Discord-style dark theme with connection panel, now playing display, and settings
 - **System tray** — Minimizes to tray, runs in background
 - **Lightweight** — ~10MB RAM, event-driven (no polling), single executable
+- **Single instance** — Only one GoodRP window at a time (like Discord)
+- **WebSocket events** — Real-time media change events for external tools
+- **Scripting hooks** — Run custom scripts on media change events
+- **Image search fallback** — Searches Unsplash by name when other sources fail
 
 ## Discord Rich Presence Layout
 
@@ -59,7 +63,7 @@ CustomRP ─┘    (same NuGet package, different apps)
 | UI | Windows Forms (dark theme) | Full GUI + system tray |
 | Discord RPC | `DiscordRichPresence` NuGet | Same library as CustomRP, well-supported |
 | Media Detection | `Windows.Media.Control` | Built-in Windows SMTC API, no polling |
-| Album Art Upload | Raw `HttpClient` to Cloudinary/Discord/PostImage APIs | Providers for flexible upload |
+| Album Art Upload | Raw `HttpClient` to Telegraph/Cloudinary/PostImage APIs | Providers for flexible upload |
 | Settings | JSON in `%AppData%\GoodRP\config.json` | Simple, portable |
 | Target Framework | `net9.0-windows10.0.19041.0` | Windows 10 1903+ / Windows 11 |
 
@@ -76,9 +80,9 @@ CustomRP ─┘    (same NuGet package, different apps)
    ↓
 5. User clicks "Show on Discord" (or auto-show if enabled)
    ↓
-6. Album art uploaded via configured provider (Cloudinary/Discord/PostImage)
+6. Album art uploaded via configured provider (Telegraph/Cloudinary/PostImage)
     ↓
-7. ArtFinderService searches for art if none found, fetches from Deezer/Spotify/Cover Art Archive
+7. ArtFinderService searches for art if none found, fetches from Deezer/iTunes/YouTube/Unsplash
     ↓
 8. Discord RPC updated with full metadata + real-time progress bar
    ↓
@@ -93,15 +97,27 @@ GoodRP/
 ├── app.manifest            — Windows manifest (DPI, OS compatibility)
 └── src/
     ├── GoodRP.csproj       — .NET 9 Windows app (WinExe)
-    ├── Program.cs          — Entry point
+    ├── Program.cs          — Entry point (single-instance guard)
     ├── MainForm.cs         — Dark-themed GUI window
     ├── TrayIcon.cs         — System tray icon (legacy, now part of MainForm)
     ├── DiscordManager.cs   — DiscordRPC client (connect/set/clear/disconnect)
     ├── MediaWatcher.cs     — SMTC session monitoring + events
-    ├── ImageUploader.cs    — Extracts thumbnail → uploads to Cloudinary/Discord/PostImage
-    ├── ArtFinderService.cs — Fetches album art from external APIs (Deezer, Spotify, Cover Art Archive)
+    ├── ImageUploader.cs    — Extracts thumbnail → uploads to Telegraph/Cloudinary/PostImage
+    ├── ArtFinderService.cs — Fetches album art from external APIs (Deezer, iTunes, YouTube, Unsplash)
     ├── ConfigManager.cs    — Settings (App ID, image provider, preferences)
-    └── SettingsForm.cs     — Settings dialog (legacy, now part of MainForm)
+    ├── HotkeyManager.cs    — Global hotkey registration
+    ├── NativeMethods.cs    — P/Invoke declarations
+    ├── SettingsForm.cs     — Settings dialog (legacy, now part of MainForm)
+    ├── ScriptingService.cs — Fire-and-forget script execution on media events
+    ├── WebSocketHandler.cs — WebSocket server for real-time media events
+    ├── Api/
+    │   └── ApiServer.cs    — HTTP REST API + WebSocket endpoint
+    └── Mcp/
+        ├── McpServer.cs    — MCP server host (stdio transport)
+        └── Tools/
+            ├── MediaTools.cs
+            ├── PresenceTools.cs
+            └── StatusTools.cs
 ```
 
 ## Real-Time Timestamp Updates
@@ -146,8 +162,8 @@ GoodRP listens to the `TimelineChanged` event from Windows SMTC. When you skip f
    - Paste Application ID → Click Connect
    - Status should show "Connected as [username]"
 3. **(Optional) Album Art**:
-   - GoodRP supports multiple image providers: Cloudinary, Discord CDN, PostImage
-   - Configure your preferred provider in GoodRP settings (e.g., Cloudinary cloud name + upload preset, or Discord webhook URL)
+   - GoodRP supports multiple image providers: Telegraph (default), Cloudinary, PostImage
+   - Configure your preferred provider in GoodRP settings
 
 ## Build & Run
 
@@ -175,14 +191,32 @@ dotnet publish src/GoodRP.csproj -c Release --self-contained -r win-x64
 
 ## Implementation Status
 
+### Completed
 - [x] Project setup
 - [x] MediaWatcher (SMTC detection)
 - [x] DiscordManager (RPC client)
 - [x] MainForm (dark GUI)
-- [x] ImageUploader (thumbnail → Cloudinary/Discord/PostImage)
-- [x] ArtFinderService (auto-fetch album art from Deezer/Spotify/Cover Art Archive)
+- [x] ImageUploader (thumbnail → Telegraph/Cloudinary/PostImage)
+- [x] ArtFinderService (auto-fetch album art from Deezer/iTunes/YouTube)
 - [x] ConfigManager (settings)
 - [x] Real-time timestamp updates
-- [ ] VLC/MPV native support (planned)
+- [x] MCP server (AI agent integration)
+- [x] HTTP REST API
+- [x] Global hotkeys
+- [x] System tray integration
+
+### In Progress — Current Sprint
+- [ ] Fix: Single-instance behavior (Mutex + FindWindow/SetForegroundWindow)
+- [ ] Fix: Auto-show checkbox not saving on toggle
+- [ ] Fix: Status label overlapping Settings group
+- [ ] Add: Display album art in GUI PictureBox
+- [ ] Add: Image search fallback by media name (Unsplash)
+- [ ] Add: Remove Discord webhook provider
+- [ ] Add: WebSocket real-time events (/ws endpoint)
+- [ ] Add: Scripting/hooks (fire-and-forget, env vars, timeout)
+
+### Planned
+- [ ] VLC/MPV native support
 - [ ] Auto-reconnect on disconnect
 - [ ] Per-app allow/ignore lists
+- [ ] Unit/integration tests

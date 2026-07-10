@@ -19,6 +19,7 @@ public static class ArtFinderService
         string? url = await SearchDeezerAsync(title, artist);
         url ??= await SearchITunesAsync(title, artist, album);
         url ??= await SearchYouTubeAsync(title, artist);
+        url ??= await SearchByNameAsync(title, artist);
 
         if (url != null)
             _cache[cacheKey] = url;
@@ -212,6 +213,34 @@ public static class ArtFinderService
             return result;
         }
         catch { return null; }
+    }
+
+    private static async Task<string?> SearchByNameAsync(string title, string artist)
+    {
+        if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(artist))
+            return null;
+
+        try
+        {
+            var query = Uri.EscapeDataString(
+                !string.IsNullOrWhiteSpace(artist)
+                    ? $"{CleanTitle(artist)} {CleanTitle(title)}"
+                    : CleanTitle(title));
+
+            var url = $"https://source.unsplash.com/featured/600x600/?{query}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var resolved = response.RequestMessage?.RequestUri?.ToString();
+                if (!string.IsNullOrWhiteSpace(resolved) && resolved != url)
+                    return resolved;
+            }
+        }
+        catch { }
+
+        return null;
     }
 
     private static JsonElement? FindBestMatch(JsonElement items, string title, string artist)

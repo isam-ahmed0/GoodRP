@@ -27,9 +27,25 @@ public static class ApiServer
         var app = builder.Build();
         app.Urls.Add($"http://127.0.0.1:{port}");
 
+        app.UseWebSockets();
+
+        var wsHandler = new WebSocketHandler(mediaWatcher, discordManager);
+        app.Map("/ws", async (HttpContext context) =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = 400;
+                return;
+            }
+
+            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            await wsHandler.HandleAsync(context, ws);
+        });
+
         MapEndpoints(app, discordManager, mediaWatcher);
 
         Console.Error.WriteLine($"[GoodRP] API server listening on http://127.0.0.1:{port}");
+        Console.Error.WriteLine($"[GoodRP] WebSocket available at ws://127.0.0.1:{port}/ws");
         await app.RunAsync();
     }
 
@@ -151,7 +167,6 @@ public static class ApiServer
                 discord_client_id = c.DiscordClientId,
                 cloudinary_cloud_name = c.CloudinaryCloudName,
                 cloudinary_upload_preset = c.CloudinaryUploadPreset,
-                discord_webhook_url = c.DiscordWebhookUrl,
                 show_album_art = c.ShowAlbumArt,
                 enable_art_finder = c.EnableArtFinder,
                 image_providers = c.ImageProviders,
@@ -178,10 +193,8 @@ public static class ApiServer
                 ConfigManager.Config.CloudinaryCloudName = ccn.GetString() ?? "";
             if (body.TryGetProperty("cloudinary_upload_preset", out var cup))
                 ConfigManager.Config.CloudinaryUploadPreset = cup.GetString() ?? "";
-            if (body.TryGetProperty("discord_webhook_url", out var dwu))
-                ConfigManager.Config.DiscordWebhookUrl = dwu.GetString() ?? "";
             if (body.TryGetProperty("image_providers", out var ipv))
-                ConfigManager.Config.ImageProviders = JsonSerializer.Deserialize<List<string>>(ipv.GetRawText()) ?? new() { "cloudinary", "discord", "postimage" };
+                ConfigManager.Config.ImageProviders = JsonSerializer.Deserialize<List<string>>(ipv.GetRawText()) ?? new() { "cloudinary", "postimage" };
 
             ConfigManager.Save();
             return Results.Ok(new { success = true });
