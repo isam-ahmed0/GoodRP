@@ -10,8 +10,61 @@ Health check.
 
 **Response**:
 ```json
-{ "status": "ok" }
+{ "success": true }
 ```
+
+---
+
+## WebSocket — Real-Time Events
+
+Connect to `ws://127.0.0.1:9876/ws` to receive live media and Discord events.
+
+**Events**:
+| `type` | Payload |
+|--------|---------|
+| `media.changed` | `title`, `clean_title`, `artist`, `album`, `app_name`, `state`, `position_seconds`, `duration_seconds`, `estimated_type` |
+| `media.stopped` | (none) |
+| `playback.state` | `state` (`playing` / `paused` / `stopped`) |
+| `discord.status` | `status`, `connected` |
+
+**Example (Node.js)**:
+```js
+const ws = new WebSocket("ws://127.0.0.1:9876/ws");
+ws.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  if (data.type === "media.changed") console.log("Now playing:", data.title);
+};
+```
+
+**Example (Python)**:
+```python
+import websockets, asyncio, json
+async def listen():
+    async with websockets.connect("ws://127.0.0.1:9876/ws") as ws:
+        async for msg in ws:
+            print(json.loads(msg))
+asyncio.run(listen())
+```
+
+---
+
+## Scripting / Hooks
+
+GoodRP can run custom scripts on media events. Configure in `%AppData%\GoodRP\config.json`:
+
+```json
+{
+  "OnMediaChangedScript": "C:\\scripts\\on_media.bat",
+  "OnMediaStoppedScript": "C:\\scripts\\on_stop.ps1",
+  "OnPlaybackStateChangedScript": "C:\\scripts\\on_state.py",
+  "ScriptTimeoutMs": 10000
+}
+```
+
+Scripts receive metadata via env vars: `GOODRP_TITLE`, `GOODRP_ARTIST`, `GOODRP_ALBUM`, `GOODRP_APP`, `GOODRP_STATE`, `GOODRP_POSITION`, `GOODRP_DURATION`, `GOODRP_EVENT`.
+
+See [HOOKS.md](HOOKS.md) for full details.
+
 
 ---
 
@@ -124,11 +177,10 @@ Get current configuration.
 **Response**:
 ```json
 {
-  "discord_client_id": "123456789",
-  "image_providers": ["cloudinary", "discord", "postimage"],
+   "discord_client_id": "123456789",
+  "image_providers": ["telegraph", "cloudinary", "postimage"],
   "cloudinary_cloud_name": "mycloud",
   "cloudinary_upload_preset": "goodrp_preset",
-  "discord_webhook_url": "https://discord.com/api/webhooks/...",
   "enable_art_finder": true,
   "auto_show_on_discord": true,
   "show_album_art": true,
@@ -149,9 +201,8 @@ Update configuration.
   "show_album_art": false,
   "activity_type_override": "listening",
   "discord_client_id": "123456789",
-  "image_providers": ["cloudinary", "discord", "postimage"],
+  "image_providers": ["telegraph", "cloudinary", "postimage"],
   "cloudinary_cloud_name": "mycloud",
-  "discord_webhook_url": "https://discord.com/api/webhooks/...",
   "enable_art_finder": true
 }
 ```

@@ -1,0 +1,16 @@
+@event mediaChanged
+@language ps1
+# This code runs as real PowerShell. GoodRP passes metadata via env vars.
+# You can use any PowerShell here, not just webhooks.
+
+$body = @{
+    content = "Now playing: $env:GOODRP_TITLE - $env:GOODRP_ARTIST"
+    embeds = @(@{
+        title = $env:GOODRP_TITLE
+        description = "$($env:GOODRP_ARTIST) - $($env:GOODRP_ALBUM)"
+        color = 5814783
+        footer = @{ text = "Playing via $($env:GOODRP_APP)" }
+    })
+} | ConvertTo-Json -Depth 4
+
+Invoke-RestMethod -Uri $env:WEBHOOK_URL -Method Post -Body $body -ContentType "application/json"

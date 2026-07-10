@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using Windows.Storage.Streams;
 
 namespace GoodRP;
 
@@ -396,12 +397,54 @@ public class MainForm : Form
             ShowTrayNotification(media.CleanTitle, media.Artist);
         }
 
+        await LoadLocalThumbnailAsync(media.Thumbnail);
+
         if (!string.IsNullOrEmpty(imageUrl) && (imageUrl!.StartsWith("http")))
         {
             _ = LoadAlbumArtIntoGuiAsync(imageUrl);
         }
 
-        ScriptingService.RunScript(ConfigManager.Config.OnMediaChangedScript, media);
+        ScriptingService.RunScript(ConfigManager.Config.OnMediaChangedScript, media, imageUrl: imageUrl);
+    }
+
+    private async Task LoadLocalThumbnailAsync(IRandomAccessStreamReference? thumbnail)
+    {
+        if (thumbnail == null) return;
+
+        try
+        {
+            using var stream = await thumbnail.OpenReadAsync();
+            using var memStream = new MemoryStream();
+            await stream.AsStreamForRead().CopyToAsync(memStream);
+            memStream.Position = 0;
+
+            Image img;
+            using (var ms = new MemoryStream(memStream.ToArray()))
+            {
+                img = Image.FromStream(ms);
+            }
+
+            var cloned = new Bitmap(img);
+            img.Dispose();
+
+            if (InvokeRequired)
+            {
+                Invoke(() =>
+                {
+                    _picAlbumArt.Image?.Dispose();
+                    _picAlbumArt.Image = cloned;
+                });
+            }
+            else
+            {
+                _picAlbumArt.Image?.Dispose();
+                _picAlbumArt.Image = cloned;
+            }
+        }
+        catch
+        {
+            // Ignore thumbnail load failures
+        }
     }
 
     private async Task LoadAlbumArtIntoGuiAsync(string url)
@@ -410,21 +453,28 @@ public class MainForm : Form
         {
             using var http = new HttpClient();
             var bytes = await http.GetByteArrayAsync(url);
-            using var ms = new MemoryStream(bytes);
-            var img = Image.FromStream(ms);
+
+            Image img;
+            using (var ms = new MemoryStream(bytes))
+            {
+                img = Image.FromStream(ms);
+            }
+
+            var cloned = new Bitmap(img);
+            img.Dispose();
 
             if (InvokeRequired)
             {
                 Invoke(() =>
                 {
                     _picAlbumArt.Image?.Dispose();
-                    _picAlbumArt.Image = img;
+                    _picAlbumArt.Image = cloned;
                 });
             }
             else
             {
                 _picAlbumArt.Image?.Dispose();
-                _picAlbumArt.Image = img;
+                _picAlbumArt.Image = cloned;
             }
         }
         catch
@@ -436,7 +486,7 @@ public class MainForm : Form
     private void OnPlaybackStateChanged(MediaPlaybackState state)
     {
         if (_currentMedia != null)
-            ScriptingService.RunScript(ConfigManager.Config.OnPlaybackStateChangedScript, _currentMedia, state);
+            ScriptingService.RunScript(ConfigManager.Config.OnPlaybackStateChangedScript, _currentMedia, state, _pendingImageUrl);
 
         if (state == MediaPlaybackState.Paused)
         {

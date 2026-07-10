@@ -1,0 +1,5 @@
+@event mediaChanged
+@webhook YOUR_WEBHOOK_URL_HERE
+@embed true
+@template by {{artist}}
+from {{album}}

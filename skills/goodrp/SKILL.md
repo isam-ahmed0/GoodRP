@@ -3,7 +3,7 @@ name: goodrp
 description: Detect what media the user is playing on Windows (Spotify, VLC, Chrome, etc.) via SMTC, and optionally display it on Discord via Rich Presence. Query current song/video details, set activity type (watching/listening), override media info, and manage Discord presence.
 metadata:
   author: GoodRP
-  version: 1.2.0
+  version: 1.3.0
   category: media
   tools: [get_current_media, set_presence, clear_presence, set_auto_show, get_status, get_config]
 ---
@@ -23,6 +23,8 @@ Use this skill when the user asks to:
 - **Check status** — "What's my Discord status?", "Is my music showing on Discord?"
 - **Auto/manual mode** — "Auto-show my music on Discord"
 - **Override details** — "Change the title to something else on Discord"
+- **Real-time events** — "Notify me when the song changes", "Watch for media changes"
+- **Run scripts on media change** — "Run a script when music starts", "Trigger a webhook on track change"
 - Anything related to detecting the user's current media or Discord Rich Presence
 
 ## How It Works
@@ -49,6 +51,54 @@ and exposes it as an MCP server (stdio) or HTTP API.
    If omitted, the detected media is used as-is.
 3. `estimated_type` in `get_current_media` is computed from the app name:
    apps containing "video", "movie", "vlc", or "mpv" → `"watching"`, otherwise → `"listening"`.
+
+## WebSocket (Real-Time Events)
+
+For real-time media change notifications (instead of polling), start GoodRP with the API:
+
+```bash
+GoodRP.exe --api
+```
+
+Connect to `ws://127.0.0.1:9876/ws`. GoodRP broadcasts JSON events:
+
+| Event | Fields |
+|-------|--------|
+| `media.changed` | `title`, `clean_title`, `artist`, `album`, `app_name`, `state`, `position_seconds`, `duration_seconds`, `estimated_type` |
+| `media.stopped` | (none) |
+| `playback.state` | `state` (`playing` / `paused` / `stopped`) |
+| `discord.status` | `status`, `connected` |
+
+Example (Node.js):
+```js
+const ws = new WebSocket("ws://127.0.0.1:9876/ws");
+ws.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  if (data.type === "media.changed") console.log("Now playing:", data.title);
+};
+```
+
+Use this when the user wants to **react to media changes in real time** rather than polling `get_current_media`.
+
+## Scripting / Hooks
+
+GoodRP can run custom scripts on media events. This is useful for side-effects like sending webhooks, writing status files, or triggering notifications.
+
+Configure in `%AppData%\GoodRP\config.json`:
+```json
+{
+  "OnMediaChangedScript": "C:\\scripts\\on_media.bat",
+  "OnMediaStoppedScript": "C:\\scripts\\on_stop.ps1",
+  "OnPlaybackStateChangedScript": "C:\\scripts\\on_state.py",
+  "ScriptTimeoutMs": 10000
+}
+```
+
+Scripts receive metadata via environment variables: `GOODRP_TITLE`, `GOODRP_ARTIST`, `GOODRP_ALBUM`, `GOODRP_APP`, `GOODRP_STATE`, `GOODRP_POSITION`, `GOODRP_DURATION`, and `GOODRP_EVENT` (stop only).
+
+Scripts run fire-and-forget on a background thread and are killed after `ScriptTimeoutMs`.
+
+See [HOOKS.md](references/HOOKS.md) for full details and examples.
 
 ## Example Interactions
 
@@ -210,4 +260,12 @@ For HTTP API access, start GoodRP with both flags:
 GoodRP.exe --mcp --api
 ```
 
-The API will be available at `http://127.0.0.1:9876`.
+The API (REST + WebSocket) will be available at `http://127.0.0.1:9876`.
+WebSocket events stream from `ws://127.0.0.1:9876/ws`.
+
+> **PowerShell note:** Use the call operator `&` to pass arguments:
+> ```powershell
+> & "C:\path\to\GoodRP.exe" --mcp --api
+> ```
+
+See [api-docs.md](references/api-docs.md) for the full REST reference and [HOOKS.md](references/HOOKS.md) for scripting.

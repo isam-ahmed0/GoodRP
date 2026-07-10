@@ -101,11 +101,10 @@ Get current GoodRP configuration.
 **Response**:
 ```json
 {
-  "discord_client_id": "123456789",
-  "image_providers": ["cloudinary", "discord", "postimage"],
+   "discord_client_id": "123456789",
+  "image_providers": ["telegraph", "cloudinary", "postimage"],
   "cloudinary_cloud_name": "mycloud",
   "cloudinary_upload_preset": "goodrp_preset",
-  "discord_webhook_url": "https://discord.com/api/webhooks/...",
   "enable_art_finder": true,
   "auto_show_on_discord": true,
   "show_album_art": true,

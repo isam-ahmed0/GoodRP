@@ -4,15 +4,33 @@ namespace GoodRP;
 
 public static class ScriptingService
 {
-    public static void RunScript(string? scriptPath, MediaInfo media, MediaPlaybackState? state = null)
+    public static void RunScript(string? scriptPath, MediaInfo media, MediaPlaybackState? state = null, string? imageUrl = null)
     {
         if (string.IsNullOrWhiteSpace(scriptPath))
             return;
+
+        if (scriptPath.EndsWith(".grp", StringComparison.OrdinalIgnoreCase))
+        {
+            var grpScript = GrpParser.Parse(scriptPath);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await GrpExecutor.RunAsync(grpScript, media, imageUrl);
+                }
+                catch
+                {
+                    // Ignore .grp execution errors
+                }
+            });
+            return;
+        }
 
         _ = Task.Run(async () =>
         {
             try
             {
+
                 using var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
@@ -32,6 +50,7 @@ public static class ScriptingService
                 process.StartInfo.Environment["GOODRP_STATE"] = state?.ToString() ?? media.State.ToString();
                 process.StartInfo.Environment["GOODRP_POSITION"] = media.Position.ToString();
                 process.StartInfo.Environment["GOODRP_DURATION"] = media.Duration.ToString();
+                process.StartInfo.Environment["GOODRP_IMAGE_URL"] = imageUrl ?? "";
 
                 if (process.Start())
                 {

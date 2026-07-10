@@ -1,0 +1,3 @@
+@event mediaChanged
+@webhook YOUR_WEBHOOK_URL_HERE
+@template Now playing: **{{title}}** by {{artist}} via {{app}}

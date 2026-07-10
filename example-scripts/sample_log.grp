@@ -1,0 +1,4 @@
+@event mediaChanged
+@log true
+@logFile C:\logs\tracks.log
+@template {{title}} - {{artist}} [{{app}}]
