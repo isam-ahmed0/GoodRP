@@ -19,6 +19,15 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+    [DllImport("user32.dll")]
+    internal static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll")]
+    internal static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
+    internal const int WM_NCLBUTTONDOWN = 0xA1;
+    internal const int HTCAPTION = 0x2;
+
     internal const uint MOD_ALT = 0x0001;
     internal const uint MOD_CONTROL = 0x0002;
     internal const uint MOD_SHIFT = 0x0004;

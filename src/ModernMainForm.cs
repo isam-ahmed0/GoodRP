@@ -121,15 +121,16 @@ public class ModernMainForm : Form
         Size = new Size(720, 580);
         MinimumSize = new Size(720, 580);
         MaximumSize = new Size(720, 580);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
+        FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Bg;
         ForeColor = Color.White;
 
+        InitializeTitleBar();
+
         _sidebar.BackColor = SidebarBg;
-        _sidebar.Location = new Point(0, 0);
-        _sidebar.Size = new Size(SidebarWidth, 580);
+        _sidebar.Location = new Point(0, 38);
+        _sidebar.Size = new Size(SidebarWidth, 542);
 
         var logo = new Label
         {
@@ -179,12 +180,72 @@ public class ModernMainForm : Form
         Controls.Add(_sidebar);
     }
 
+    private void InitializeTitleBar()
+    {
+        _titleBar.Location = new Point(0, 0);
+        _titleBar.Size = new Size(720, 38);
+        _titleBar.BackColor = SidebarBg;
+        _titleBar.MouseDown += TitleBar_MouseDown;
+
+        _titleText.Text = "9XT";
+        _titleText.Location = new Point(16, 0);
+        _titleText.Size = new Size(160, 38);
+        _titleText.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+        _titleText.ForeColor = Color.White;
+        _titleText.TextAlign = ContentAlignment.MiddleLeft;
+        _titleText.MouseDown += TitleBar_MouseDown;
+
+        _btnMinimize.Text = "–";
+        _btnMinimize.Location = new Point(644, 0);
+        _btnMinimize.Size = new Size(38, 38);
+        _btnMinimize.FlatStyle = FlatStyle.Flat;
+        _btnMinimize.FlatAppearance.BorderSize = 0;
+        _btnMinimize.BackColor = SidebarBg;
+        _btnMinimize.ForeColor = TextMuted;
+        _btnMinimize.Font = new Font("Segoe UI", 14);
+        _btnMinimize.Cursor = Cursors.Hand;
+        _btnMinimize.MouseEnter += (s, e) => _btnMinimize.BackColor = Color.FromArgb(45, 45, 65);
+        _btnMinimize.MouseLeave += (s, e) => _btnMinimize.BackColor = SidebarBg;
+        _btnMinimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
+
+        _btnClose.Text = "✕";
+        _btnClose.Location = new Point(682, 0);
+        _btnClose.Size = new Size(38, 38);
+        _btnClose.FlatStyle = FlatStyle.Flat;
+        _btnClose.FlatAppearance.BorderSize = 0;
+        _btnClose.BackColor = SidebarBg;
+        _btnClose.ForeColor = TextMuted;
+        _btnClose.Font = new Font("Segoe UI", 11);
+        _btnClose.Cursor = Cursors.Hand;
+        _btnClose.MouseEnter += (s, e) => { _btnClose.BackColor = Color.FromArgb(232, 17, 35); _btnClose.ForeColor = Color.White; };
+        _btnClose.MouseLeave += (s, e) => { _btnClose.BackColor = SidebarBg; _btnClose.ForeColor = TextMuted; };
+        _btnClose.Click += (s, e) => Close();
+
+        _titleBar.Controls.AddRange(new Control[] { _titleText, _btnMinimize, _btnClose });
+        Controls.Add(_titleBar);
+    }
+
+    private void TitleBar_MouseDown(object? sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            NativeMethods.ReleaseCapture();
+            NativeMethods.SendMessage(Handle, NativeMethods.WM_NCLBUTTONDOWN, NativeMethods.HTCAPTION, 0);
+        }
+    }
+
     private Label _navHome = new();
     private Label _navConnections = new();
     private Label _navScripts = new();
     private Label _navLogs = new();
     private Label _navSettings = new();
     private Label _navAbout = new();
+
+    // Title bar
+    private readonly Panel _titleBar = new();
+    private readonly Label _titleText = new();
+    private readonly Button _btnMinimize = new();
+    private readonly Button _btnClose = new();
 
     private Label MakeNavItem(string text, int y)
     {
@@ -239,8 +300,8 @@ public class ModernMainForm : Form
 
     private void InitializeHome()
     {
-        _pnlHome.Location = new Point(ContentX, 0);
-        _pnlHome.Size = new Size(ContentWidth, 580);
+        _pnlHome.Location = new Point(ContentX, 38);
+        _pnlHome.Size = new Size(ContentWidth, 542);
         _pnlHome.BackColor = Bg;
 
         _picAlbumArt.Location = new Point(30, 40);
@@ -308,8 +369,8 @@ public class ModernMainForm : Form
 
     private void InitializeConnections()
     {
-        _pnlConnections.Location = new Point(ContentX, 0);
-        _pnlConnections.Size = new Size(ContentWidth, 580);
+        _pnlConnections.Location = new Point(ContentX, 38);
+        _pnlConnections.Size = new Size(ContentWidth, 542);
         _pnlConnections.BackColor = Bg;
         _pnlConnections.AutoScroll = true;
         _pnlConnections.Visible = false;
@@ -448,8 +509,8 @@ public class ModernMainForm : Form
 
     private void InitializeScripts()
     {
-        _pnlScripts.Location = new Point(ContentX, 0);
-        _pnlScripts.Size = new Size(ContentWidth, 580);
+        _pnlScripts.Location = new Point(ContentX, 38);
+        _pnlScripts.Size = new Size(ContentWidth, 542);
         _pnlScripts.BackColor = Bg;
         _pnlScripts.AutoScroll = true;
         _pnlScripts.Visible = false;
@@ -515,8 +576,8 @@ public class ModernMainForm : Form
 
     private void InitializeLogs()
     {
-        _pnlLogs.Location = new Point(ContentX, 0);
-        _pnlLogs.Size = new Size(ContentWidth, 580);
+        _pnlLogs.Location = new Point(ContentX, 38);
+        _pnlLogs.Size = new Size(ContentWidth, 542);
         _pnlLogs.BackColor = Bg;
         _pnlLogs.Visible = false;
 
@@ -583,8 +644,8 @@ public class ModernMainForm : Form
 
     private void InitializeSettings()
     {
-        _pnlSettings.Location = new Point(ContentX, 0);
-        _pnlSettings.Size = new Size(ContentWidth, 580);
+        _pnlSettings.Location = new Point(ContentX, 38);
+        _pnlSettings.Size = new Size(ContentWidth, 542);
         _pnlSettings.BackColor = Bg;
         _pnlSettings.AutoScroll = true;
         _pnlSettings.Visible = false;
@@ -642,9 +703,15 @@ public class ModernMainForm : Form
         var hProv = SectionHeader("Image Upload Providers (order)", y); y += 30;
         _lstProviders.Location = new Point(20, y); _lstProviders.Size = new Size(300, 90);
         _lstProviders.BackColor = InputBg; _lstProviders.ForeColor = Color.White; _lstProviders.BorderStyle = BorderStyle.None;
-        _lstProviders.AllowDrop = true;
-        SetupProviderDragDrop();
         y += 100;
+
+        var btnProvUp = new Button { Text = "↑", Location = new Point(330, y - 96), Size = new Size(34, 28) };
+        MakeButton(btnProvUp, Color.FromArgb(80, 80, 95));
+        btnProvUp.Click += (s, e) => MoveProvider(-1);
+
+        var btnProvDown = new Button { Text = "↓", Location = new Point(370, y - 96), Size = new Size(34, 28) };
+        MakeButton(btnProvDown, Color.FromArgb(80, 80, 95));
+        btnProvDown.Click += (s, e) => MoveProvider(1);
         var lblCloudName = new Label { Text = "Cloudinary Cloud Name:", Location = new Point(20, y), Size = new Size(200, 24), ForeColor = TextMuted, Font = new Font("Segoe UI", 10) };
         _txtCloudName.Location = new Point(220, y); _txtCloudName.Size = new Size(240, 24); MakeTextBox(_txtCloudName, "cloud name"); y += 32;
         var lblCloudPreset = new Label { Text = "Cloudinary Upload Preset:", Location = new Point(20, y), Size = new Size(200, 24), ForeColor = TextMuted, Font = new Font("Segoe UI", 10) };
@@ -683,7 +750,7 @@ public class ModernMainForm : Form
             hDiscord, lblActivity, _rbAuto, _rbListening, _rbWatching, lblAuto, _tglAutoShow, lblMcp, _tglMcp,
             hArt, lblArt, _tglShowArt, lblFinder, _tglArtFinder,
             hNotif, lblNotify, _tglNotify, lblHot, _tglHotkeys, lblShowK, _txtShowKey, lblHideK, _txtHideKey,
-            hProv, _lstProviders, lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset,
+            hProv, _lstProviders, lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, btnProvUp, btnProvDown,
             hApps, upAllowed, lblAllowed, _txtAllowed, btnAddAllowed, _lstAllowed, btnDelAllowed,
             lblIgnored, _txtIgnored, btnAddIgnored, _lstIgnored, btnDelIgnored,
             lblGui, _cboGui
@@ -691,32 +758,19 @@ public class ModernMainForm : Form
         Controls.Add(_pnlSettings);
     }
 
-    private void SetupProviderDragDrop()
+    private void MoveProvider(int direction)
     {
-        _lstProviders.MouseDown += (s, e) =>
-        {
-            if (_lstProviders.SelectedIndex >= 0)
-                _lstProviders.DoDragDrop(_lstProviders.SelectedIndex, DragDropEffects.Move);
-        };
-        _lstProviders.DragOver += (s, e) =>
-        {
-            if (e.Data != null && e.Data.GetDataPresent(typeof(int)))
-                e.Effect = DragDropEffects.Move;
-        };
-        _lstProviders.DragDrop += (s, e) =>
-        {
-            if (e.Data == null || !e.Data.GetDataPresent(typeof(int))) return;
-            var src = (int)e.Data.GetData(typeof(int))!;
-            var dest = _lstProviders.IndexFromPoint(e.X, e.Y);
-            if (dest < 0) dest = _lstProviders.Items.Count - 1;
-            var providers = ConfigManager.Config.ImageProviders;
-            if (src < 0 || src >= providers.Count || dest < 0 || dest >= providers.Count) return;
-            var item = providers[src];
-            providers.RemoveAt(src);
-            providers.Insert(dest, item);
-            ConfigManager.Save();
-            RefreshProviderList();
-        };
+        var idx = _lstProviders.SelectedIndex;
+        var providers = ConfigManager.Config.ImageProviders;
+        if (idx < 0 || idx + direction < 0 || idx + direction >= providers.Count)
+            return;
+
+        var item = providers[idx];
+        providers.RemoveAt(idx);
+        providers.Insert(idx + direction, item);
+        ConfigManager.Save();
+        RefreshProviderList();
+        _lstProviders.SelectedIndex = idx + direction;
     }
 
     private void RefreshProviderList()
@@ -740,8 +794,8 @@ public class ModernMainForm : Form
 
     private void InitializeAbout()
     {
-        _pnlAbout.Location = new Point(ContentX, 0);
-        _pnlAbout.Size = new Size(ContentWidth, 580);
+        _pnlAbout.Location = new Point(ContentX, 38);
+        _pnlAbout.Size = new Size(ContentWidth, 542);
         _pnlAbout.BackColor = Bg;
         _pnlAbout.Visible = false;
 
