@@ -53,6 +53,8 @@ public class MainForm : Form
         SetupTrayIcon();
         WireEvents();
 
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+
         LoadSettings();
     }
 

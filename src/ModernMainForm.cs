@@ -109,6 +109,8 @@ public class ModernMainForm : Form
         SetupTrayIcon();
         WireEvents();
 
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+
         LoadSettings();
         ShowPage(_pnlHome, _navHome);
     }
