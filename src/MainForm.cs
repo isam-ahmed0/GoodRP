@@ -40,6 +40,9 @@ public class MainForm : Form
     private Label _lblShowHotkey = new();
     private Label _lblHideHotkey = new();
     private ComboBox _cboGui = new();
+    private Button _btnCheckUpdate = new();
+    private Label _lblUpdateStatus = new();
+    private UpdateInfo? _pendingUpdate = null;
 
     private MediaInfo? _currentMedia;
     private string? _pendingImageUrl;
@@ -147,7 +150,7 @@ public class MainForm : Form
 
         _grpSettings.Text = "Settings";
         _grpSettings.Location = new Point(12, 290);
-        _grpSettings.Size = new Size(440, 295);
+        _grpSettings.Size = new Size(440, 330);
         _grpSettings.ForeColor = Color.White;
         _grpSettings.BackColor = Color.FromArgb(40, 40, 40);
 
@@ -238,7 +241,20 @@ public class MainForm : Form
         _cboGui.Items.AddRange(new object[] { "Classic", "9XT (Modern)" });
         _cboGui.SelectedIndexChanged += CboGui_SelectedIndexChanged;
 
-        _grpSettings.Controls.AddRange(new Control[] { lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, _chkShowAlbumArt, _chkAutoShow, _chkMcpServer, _chkEnableArtFinder, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey, lblGui, _cboGui });
+        _btnCheckUpdate.Text = "Check for updates";
+        _btnCheckUpdate.Location = new Point(15, 277);
+        _btnCheckUpdate.Size = new Size(180, 28);
+        _btnCheckUpdate.BackColor = Color.FromArgb(88, 101, 242);
+        _btnCheckUpdate.ForeColor = Color.White;
+        _btnCheckUpdate.FlatStyle = FlatStyle.Flat;
+        _btnCheckUpdate.Click += BtnCheckUpdate_Click;
+
+        _lblUpdateStatus.Text = "Checking for updates...";
+        _lblUpdateStatus.Location = new Point(15, 309);
+        _lblUpdateStatus.Size = new Size(400, 20);
+        _lblUpdateStatus.ForeColor = Color.Gray;
+
+        _grpSettings.Controls.AddRange(new Control[] { lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, _chkShowAlbumArt, _chkAutoShow, _chkMcpServer, _chkEnableArtFinder, lblActivity, _rbAuto, _rbListening, _rbWatching, lblNotifications, _chkUseNotifications, lblHotkeys, _chkUseHotkeys, lblShowKey, _lblShowHotkey, lblHideKey, _lblHideHotkey, lblGui, _cboGui, _btnCheckUpdate, _lblUpdateStatus });
 
         _lblCurrentMedia.Text = "Discord RP: Not showing";
         _lblCurrentMedia.Location = new Point(12, 565);
@@ -341,6 +357,66 @@ public class MainForm : Form
             "GoodRP",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
+    }
+
+    private async void BtnCheckUpdate_Click(object? sender, EventArgs e)
+    {
+        if (_pendingUpdate == null)
+        {
+            _btnCheckUpdate.Enabled = false;
+            _lblUpdateStatus.Text = "Checking for updates...";
+            var info = await UpdateService.CheckForUpdateAsync();
+            _btnCheckUpdate.Enabled = true;
+            if (info != null)
+            {
+                _pendingUpdate = info;
+                _lblUpdateStatus.Text = $"Update available: v{info.Version} — click to install";
+            }
+            else
+            {
+                _lblUpdateStatus.Text = "You are up to date";
+            }
+            return;
+        }
+
+        _btnCheckUpdate.Enabled = false;
+        try
+        {
+            await UpdateService.DownloadAndRunAsync(_pendingUpdate.DownloadUrl, s => _lblUpdateStatus.Text = s);
+            Application.Exit();
+        }
+        catch (Exception ex)
+        {
+            _lblUpdateStatus.Text = $"Update failed: {ex.Message}";
+            _btnCheckUpdate.Enabled = true;
+        }
+    }
+
+    private void CheckForUpdatesOnStartup()
+    {
+        _ = Task.Run(async () =>
+        {
+            var info = await UpdateService.CheckForUpdateAsync();
+            if (info != null)
+            {
+                _pendingUpdate = info;
+                if (InvokeRequired)
+                    Invoke(() => _lblUpdateStatus.Text = $"Update available: v{info.Version} — click to install");
+                else
+                    _lblUpdateStatus.Text = $"Update available: v{info.Version} — click to install";
+            }
+            else
+            {
+                if (InvokeRequired)
+                    Invoke(() =>
+                    {
+                        if (_lblUpdateStatus.Text.StartsWith("Checking"))
+                            _lblUpdateStatus.Text = "You are up to date";
+                    });
+                else if (_lblUpdateStatus.Text.StartsWith("Checking"))
+                    _lblUpdateStatus.Text = "You are up to date";
+            }
+        });
     }
 
     private void SaveSettings()
@@ -640,6 +716,7 @@ public class MainForm : Form
     {
         base.OnLoad(e);
         RegisterHotkeys();
+        CheckForUpdatesOnStartup();
     }
 
     private void RegisterHotkeys()

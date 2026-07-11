@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using GoodRP.Api;
 using GoodRP.Mcp;
 
@@ -26,12 +27,22 @@ static class Program
             var hwnd = NativeMethods.FindWindow(null, "GoodRP - Discord Rich Presence");
             if (hwnd == IntPtr.Zero)
                 hwnd = NativeMethods.FindWindow(null, "GoodRP 9XT");
+            var alive = false;
             if (hwnd != IntPtr.Zero)
+            {
+                NativeMethods.GetWindowThreadProcessId(hwnd, out int pid);
+                if (pid != 0)
+                {
+                    try { alive = !Process.GetProcessById(pid).HasExited; }
+                    catch { alive = false; }
+                }
+            }
+            if (alive)
             {
                 NativeMethods.ShowWindow(hwnd, 9);
                 NativeMethods.SetForegroundWindow(hwnd);
+                return;
             }
-            return;
         }
 
         Application.EnableVisualStyles();

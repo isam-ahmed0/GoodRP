@@ -14,6 +14,9 @@ internal static class NativeMethods
     internal static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
     [DllImport("user32.dll")]
+    internal static extern int GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
+
+    [DllImport("user32.dll")]
     internal static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]

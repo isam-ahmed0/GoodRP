@@ -36,10 +36,10 @@ public class ModernMainForm : Form
 
     // Pages
     private readonly Panel _pnlHome = new();
-    private readonly Panel _pnlConnections = new();
-    private readonly Panel _pnlScripts = new();
+    private readonly ScrollViewer _pnlConnections = new();
+    private readonly ScrollViewer _pnlScripts = new();
     private readonly Panel _pnlLogs = new();
-    private readonly Panel _pnlSettings = new();
+    private readonly ScrollViewer _pnlSettings = new();
     private readonly Panel _pnlAbout = new();
 
     // Home controls
@@ -69,6 +69,7 @@ public class ModernMainForm : Form
     // Logs controls
     private readonly ComboBox _cboLogFilter = new();
     private readonly ListView _lstLogs = new();
+    private readonly ScrollViewer _logsScroll = new();
 
     // Settings controls
     private readonly ToggleSwitch _tglAutoShow = new();
@@ -87,9 +88,11 @@ public class ModernMainForm : Form
     private readonly ListBox _lstIgnored = new();
     private readonly TextBox _txtAllowed = new();
     private readonly TextBox _txtIgnored = new();
-    private readonly TextBox _txtShowKey = new();
-    private readonly TextBox _txtHideKey = new();
+    private readonly Label _lblHotkeyInfo = new();
     private readonly ComboBox _cboGui = new();
+    private readonly Button _btnCheckUpdate = new();
+    private readonly Label _lblUpdateStatus = new();
+    private UpdateInfo? _pendingUpdate = null;
 
     private MediaInfo? _currentMedia;
     private string? _pendingImageUrl;
@@ -374,7 +377,6 @@ public class ModernMainForm : Form
         _pnlConnections.Location = new Point(ContentX, 38);
         _pnlConnections.Size = new Size(ContentWidth, 542);
         _pnlConnections.BackColor = Bg;
-        _pnlConnections.AutoScroll = true;
         _pnlConnections.Visible = false;
 
         int y = 24;
@@ -387,6 +389,7 @@ public class ModernMainForm : Form
         _lstAppIds.ForeColor = Color.White;
         _lstAppIds.BorderStyle = BorderStyle.None;
         _lstAppIds.DrawMode = DrawMode.OwnerDrawFixed;
+        _lstAppIds.ItemHeight = 22;
         _lstAppIds.DrawItem += (s, e) =>
         {
             e.DrawBackground();
@@ -432,7 +435,7 @@ public class ModernMainForm : Form
         _lblConnStatus.Font = new Font("Segoe UI", 10);
         _lblConnStatus.ForeColor = Fail;
 
-        _pnlConnections.Controls.AddRange(new Control[] { header, _lstAppIds, btnAdd, btnRemove, btnConnect, btnSetActive, addHeader, _txtNewName, _txtNewId, _lblConnStatus });
+        _pnlConnections.Content.Controls.AddRange(new Control[] { header, _lstAppIds, btnAdd, btnRemove, btnConnect, btnSetActive, addHeader, _txtNewName, _txtNewId, _lblConnStatus });
         Controls.Add(_pnlConnections);
     }
 
@@ -514,7 +517,6 @@ public class ModernMainForm : Form
         _pnlScripts.Location = new Point(ContentX, 38);
         _pnlScripts.Size = new Size(ContentWidth, 542);
         _pnlScripts.BackColor = Bg;
-        _pnlScripts.AutoScroll = true;
         _pnlScripts.Visible = false;
 
         int y = 24;
@@ -541,7 +543,7 @@ public class ModernMainForm : Form
             ForeColor = TextDim
         };
 
-        _pnlScripts.Controls.AddRange(new Control[] { header, lblTimeout, _txtScriptTimeout, note });
+        _pnlScripts.Content.Controls.AddRange(new Control[] { header, lblTimeout, _txtScriptTimeout, note });
         Controls.Add(_pnlScripts);
     }
 
@@ -559,16 +561,24 @@ public class ModernMainForm : Form
         var capturedBox = pathBox;
         btn.Click += (s, e) =>
         {
-            using var dlg = new OpenFileDialog
+            try
             {
-                Filter = "All scripts|*.ps1;*.py;*.bat;*.js;*.grp|PowerShell|*.ps1|Python|*.py|Batch|*.bat|JavaScript|*.js|GoodRP Script|*.grp",
-                Title = "Select script"
-            };
-            if (dlg.ShowDialog() == DialogResult.OK)
-                capturedBox.Text = dlg.FileName;
+                using var dlg = new OpenFileDialog
+                {
+                    Filter = "All scripts|*.ps1;*.py;*.bat;*.js;*.grp|PowerShell|*.ps1|Python|*.py|Batch|*.bat|JavaScript|*.js|GoodRP Script|*.grp",
+                    Title = "Select script",
+                    AutoUpgradeEnabled = false
+                };
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                    capturedBox.Text = dlg.FileName;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not open file dialog:\n{ex.Message}", "9XT", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         };
 
-        _pnlScripts.Controls.AddRange(new Control[] { lbl, toggle, pathBox, btn });
+        _pnlScripts.Content.Controls.AddRange(new Control[] { lbl, toggle, pathBox, btn });
         return y + 70;
     }
 
@@ -602,10 +612,11 @@ public class ModernMainForm : Form
             RefreshLogs();
         };
 
-        _lstLogs.Location = new Point(20, 92);
+        _lstLogs.Location = new Point(0, 0);
         _lstLogs.Size = new Size(460, 450);
         _lstLogs.View = View.Details;
         _lstLogs.FullRowSelect = true;
+        _lstLogs.Scrollable = false;
         _lstLogs.BackColor = InputBg;
         _lstLogs.ForeColor = Color.White;
         _lstLogs.Columns.Add("Time", 70);
@@ -613,7 +624,11 @@ public class ModernMainForm : Form
         _lstLogs.Columns.Add("Message", 250);
         _lstLogs.Columns.Add("Status", 60);
 
-        _pnlLogs.Controls.AddRange(new Control[] { header, _cboLogFilter, btnClear, _lstLogs });
+        _logsScroll.Location = new Point(20, 92);
+        _logsScroll.Size = new Size(460, 450);
+        _logsScroll.Content.Controls.Add(_lstLogs);
+
+        _pnlLogs.Controls.AddRange(new Control[] { header, _cboLogFilter, btnClear, _logsScroll });
         Controls.Add(_pnlLogs);
     }
 
@@ -631,6 +646,10 @@ public class ModernMainForm : Form
             item.ForeColor = e.Success ? Color.White : Fail;
             _lstLogs.Items.Add(item);
         }
+
+        var rowH = _lstLogs.Items.Count > 0 ? _lstLogs.GetItemRect(0).Height : 18;
+        _lstLogs.Height = Math.Max(36, _lstLogs.Items.Count * rowH + 22);
+        _logsScroll.PerformLayout();
     }
 
     private void OnLogEntry(LogEntry entry)
@@ -649,7 +668,6 @@ public class ModernMainForm : Form
         _pnlSettings.Location = new Point(ContentX, 38);
         _pnlSettings.Size = new Size(ContentWidth, 542);
         _pnlSettings.BackColor = Bg;
-        _pnlSettings.AutoScroll = true;
         _pnlSettings.Visible = false;
 
         int y = 20;
@@ -695,11 +713,10 @@ public class ModernMainForm : Form
         _tglNotify.Location = new Point(400, y); y += 36;
         var lblHot = new Label { Text = "Enable global hotkeys", Location = new Point(20, y), Size = new Size(260, 24), ForeColor = TextMuted, Font = new Font("Segoe UI", 10) };
         _tglHotkeys.Location = new Point(400, y); y += 36;
-        var lblShowK = new Label { Text = "Show hotkey:", Location = new Point(20, y), Size = new Size(120, 24), ForeColor = TextMuted, Font = new Font("Segoe UI", 10) };
-        _txtShowKey.Location = new Point(140, y); _txtShowKey.Size = new Size(150, 24); MakeTextBox(_txtShowKey, "Ctrl+Shift+G");
-        var lblHideK = new Label { Text = "Hide hotkey:", Location = new Point(300, y), Size = new Size(120, 24), ForeColor = TextMuted, Font = new Font("Segoe UI", 10) };
-        _txtHideKey.Location = new Point(410, y); _txtHideKey.Size = new Size(150, 24); MakeTextBox(_txtHideKey, "Ctrl+Shift+H");
-        y += 44;
+        _lblHotkeyInfo.Location = new Point(20, y); _lblHotkeyInfo.Size = new Size(450, 24);
+        _lblHotkeyInfo.ForeColor = TextMuted; _lblHotkeyInfo.Font = new Font("Segoe UI", 10);
+        _lblHotkeyInfo.Text = "Show / Hide hotkeys (edit in the default GUI or config file):";
+        y += 36;
 
         // Image providers
         var hProv = SectionHeader("Image Upload Providers (order)", y); y += 30;
@@ -748,10 +765,10 @@ public class ModernMainForm : Form
         };
         btnDelIgnored.Click += (s, e) => { if (_lstIgnored.SelectedIndex >= 0) { ConfigManager.Config.IgnoredApps.RemoveAt(_lstIgnored.SelectedIndex); RefreshAppLists(); SaveSettings(); } };
 
-        _pnlSettings.Controls.AddRange(new Control[] {
+        _pnlSettings.Content.Controls.AddRange(new Control[] {
             hDiscord, lblActivity, _rbAuto, _rbListening, _rbWatching, lblAuto, _tglAutoShow, lblMcp, _tglMcp,
             hArt, lblArt, _tglShowArt, lblFinder, _tglArtFinder,
-            hNotif, lblNotify, _tglNotify, lblHot, _tglHotkeys, lblShowK, _txtShowKey, lblHideK, _txtHideKey,
+            hNotif, lblNotify, _tglNotify, lblHot, _tglHotkeys, _lblHotkeyInfo,
             hProv, _lstProviders, lblCloudName, _txtCloudName, lblCloudPreset, _txtCloudPreset, btnProvUp, btnProvDown,
             hApps, upAllowed, lblAllowed, _txtAllowed, btnAddAllowed, _lstAllowed, btnDelAllowed,
             lblIgnored, _txtIgnored, btnAddIgnored, _lstIgnored, btnDelIgnored,
@@ -814,8 +831,80 @@ public class ModernMainForm : Form
             ForeColor = TextMuted
         };
 
-        _pnlAbout.Controls.AddRange(new Control[] { title, subtitle, version, info });
+        _btnCheckUpdate.Text = "Check for updates";
+        _btnCheckUpdate.Location = new Point(32, 370);
+        _btnCheckUpdate.Size = new Size(180, 38);
+        MakeButton(_btnCheckUpdate, Accent);
+        _btnCheckUpdate.Click += BtnCheckUpdate_Click;
+
+        _lblUpdateStatus.Text = "Checking for updates...";
+        _lblUpdateStatus.Location = new Point(32, 416);
+        _lblUpdateStatus.Size = new Size(440, 22);
+        _lblUpdateStatus.Font = new Font("Segoe UI", 10);
+        _lblUpdateStatus.ForeColor = TextDim;
+
+        _pnlAbout.Controls.AddRange(new Control[] { title, subtitle, version, info, _btnCheckUpdate, _lblUpdateStatus });
         Controls.Add(_pnlAbout);
+    }
+
+    private async void BtnCheckUpdate_Click(object? sender, EventArgs e)
+    {
+        if (_pendingUpdate == null)
+        {
+            _btnCheckUpdate.Enabled = false;
+            _lblUpdateStatus.Text = "Checking for updates...";
+            var info = await UpdateService.CheckForUpdateAsync();
+            _btnCheckUpdate.Enabled = true;
+            if (info != null)
+            {
+                _pendingUpdate = info;
+                _lblUpdateStatus.Text = $"Update available: v{info.Version} — click to install";
+            }
+            else
+            {
+                _lblUpdateStatus.Text = "You are up to date";
+            }
+            return;
+        }
+
+        _btnCheckUpdate.Enabled = false;
+        try
+        {
+            await UpdateService.DownloadAndRunAsync(_pendingUpdate.DownloadUrl, s => _lblUpdateStatus.Text = s);
+            Application.Exit();
+        }
+        catch (Exception ex)
+        {
+            _lblUpdateStatus.Text = $"Update failed: {ex.Message}";
+            _btnCheckUpdate.Enabled = true;
+        }
+    }
+
+    private void CheckForUpdatesOnStartup()
+    {
+        _ = Task.Run(async () =>
+        {
+            var info = await UpdateService.CheckForUpdateAsync();
+            if (info != null)
+            {
+                _pendingUpdate = info;
+                if (InvokeRequired)
+                    Invoke(() => _lblUpdateStatus.Text = $"Update available: v{info.Version} — click to install");
+                else
+                    _lblUpdateStatus.Text = $"Update available: v{info.Version} — click to install";
+            }
+            else
+            {
+                if (InvokeRequired)
+                    Invoke(() =>
+                    {
+                        if (_lblUpdateStatus.Text.StartsWith("Checking"))
+                            _lblUpdateStatus.Text = "You are up to date";
+                    });
+                else if (_lblUpdateStatus.Text.StartsWith("Checking"))
+                    _lblUpdateStatus.Text = "You are up to date";
+            }
+        });
     }
 
     #endregion
@@ -955,8 +1044,7 @@ public class ModernMainForm : Form
 
         _txtCloudName.Text = ConfigManager.Config.CloudinaryCloudName;
         _txtCloudPreset.Text = ConfigManager.Config.CloudinaryUploadPreset;
-        _txtShowKey.Text = ConfigManager.Config.ShowHotkey;
-        _txtHideKey.Text = ConfigManager.Config.HideHotkey;
+        _lblHotkeyInfo.Text = $"Show: {ConfigManager.Config.ShowHotkey}    Hide: {ConfigManager.Config.HideHotkey}";
         _txtScriptTimeout.Text = ConfigManager.Config.ScriptTimeoutMs.ToString();
         _cboGui.SelectedIndex = string.Equals(ConfigManager.Config.GuiVersion, "9xt", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
 
@@ -982,8 +1070,6 @@ public class ModernMainForm : Form
         ConfigManager.Config.ActivityTypeOverride = _rbAuto.Checked ? "Auto" : _rbListening.Checked ? "Listening" : "Watching";
         ConfigManager.Config.CloudinaryCloudName = _txtCloudName.Text.Trim();
         ConfigManager.Config.CloudinaryUploadPreset = _txtCloudPreset.Text.Trim();
-        ConfigManager.Config.ShowHotkey = _txtShowKey.Text.Trim();
-        ConfigManager.Config.HideHotkey = _txtHideKey.Text.Trim();
 
         if (int.TryParse(_txtScriptTimeout.Text.Trim(), out var t) && t > 0)
             ConfigManager.Config.ScriptTimeoutMs = t;
@@ -1200,6 +1286,7 @@ public class ModernMainForm : Form
     {
         base.OnLoad(e);
         RegisterHotkeys();
+        CheckForUpdatesOnStartup();
     }
 
     private void RegisterHotkeys()
