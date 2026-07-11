@@ -78,8 +78,10 @@ public static class UpdateService
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
             FileName = temp,
+            Arguments = "/SILENT /CLOSEAPPLICATIONS /SUPPRESSMSGBOXES",
             UseShellExecute = true
         });
+        System.Threading.Thread.Sleep(1500);
     }
 
     private static string Normalize(string v) => v.Trim().TrimStart('v', 'V');
