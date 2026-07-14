@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GoodRP.Avalonia.Views.LogsPage">
+
+    <Border Background="#1A1A2E" Padding="30,40,30,30">
+        <DockPanel>
+            <!-- Header -->
+            <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,16">
+                <TextBlock Text="Activity Log" FontSize="13" FontWeight="Bold" Foreground="White"/>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <ComboBox Width="140" Height="30" x:Name="LogFilter" Background="#28283C" Foreground="White"
+                              SelectedIndex="0" SelectionChanged="Filter_Changed">
+                        <ComboBoxItem Content="All"/>
+                        <ComboBoxItem Content="Media"/>
+                        <ComboBoxItem Content="Discord"/>
+                        <ComboBoxItem Content="Script"/>
+                        <ComboBoxItem Content="Error"/>
+                    </ComboBox>
+                    <Button Content="Clear" Width="100" Height="28" Background="#50505F" Foreground="White" CornerRadius="6"
+                            Click="Clear_Click"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Log List -->
+            <ListBox Background="Transparent" Foreground="White" x:Name="LogList"
+                     BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" FontSize="10" Foreground="White" FontFamily="Consolas,Monospace"
+                                   TextWrapping="Wrap"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+    </Border>
+</UserControl>

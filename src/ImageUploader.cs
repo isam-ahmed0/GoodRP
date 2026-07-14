@@ -33,6 +33,29 @@ public static class ImageUploader
         }
     }
 
+    public static async Task<string?> UploadArtworkUrlAsync(string? artworkUrl, string cacheKey)
+    {
+        if (string.IsNullOrEmpty(artworkUrl)) return null;
+
+        if (_cache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        try
+        {
+            using var response = await _httpClient.GetAsync(artworkUrl);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            if (imageBytes.Length == 0) return null;
+
+            return await UploadToProvidersAsync(imageBytes, cacheKey);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static async Task<string?> UploadToProvidersAsync(byte[] imageData, string cacheKey)
     {
         var providers = ConfigManager.Config.ImageProviders;

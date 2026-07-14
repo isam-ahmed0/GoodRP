@@ -1,0 +1,78 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GoodRP.Avalonia.ViewModels"
+        xmlns:views="using:GoodRP.Avalonia.Views"
+        x:Class="GoodRP.Avalonia.Views.MainWindow"
+        Title="9XT - GoodRP"
+        Width="720" Height="580"
+        MinWidth="720" MinHeight="580"
+        MaxWidth="720" MaxHeight="580"
+        WindowStartupLocation="CenterScreen"
+        Background="#1A1A2E"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="-1">
+
+    <Grid ColumnDefinitions="210,*">
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="#0F0F1A" Padding="0">
+            <DockPanel>
+                <!-- Logo -->
+                <StackPanel DockPanel.Dock="Top" Margin="20,24,20,0">
+                    <TextBlock Text="9XT" FontSize="22" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="by GoodRP" FontSize="9" Foreground="#72767D" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Status -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="20,0,20,20">
+                    <TextBlock Text="{Binding StatusText}" FontSize="9" Foreground="{Binding StatusColor}"/>
+                    <TextBlock Text="{Binding NowPlaying}" FontSize="9" Foreground="#72767D" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Nav Items -->
+                <StackPanel Margin="0,110,0,0" Spacing="12">
+                    <Border Background="Transparent" Padding="12,8" CornerRadius="6" Cursor="Hand"
+                            PointerEntered="Nav_PointerEntered" PointerExited="Nav_PointerExited"
+                            Tag="Home" Tapped="Nav_Tapped">
+                        <TextBlock Text="Home" FontSize="11" Foreground="#B9BBBE" x:Name="NavHome"/>
+                    </Border>
+                    <Border Background="Transparent" Padding="12,8" CornerRadius="6" Cursor="Hand"
+                            PointerEntered="Nav_PointerEntered" PointerExited="Nav_PointerExited"
+                            Tag="Connections" Tapped="Nav_Tapped">
+                        <TextBlock Text="Connections" FontSize="11" Foreground="#B9BBBE" x:Name="NavConnections"/>
+                    </Border>
+                    <Border Background="Transparent" Padding="12,8" CornerRadius="6" Cursor="Hand"
+                            PointerEntered="Nav_PointerEntered" PointerExited="Nav_PointerExited"
+                            Tag="Scripts" Tapped="Nav_Tapped">
+                        <TextBlock Text="Scripts" FontSize="11" Foreground="#B9BBBE" x:Name="NavScripts"/>
+                    </Border>
+                    <Border Background="Transparent" Padding="12,8" CornerRadius="6" Cursor="Hand"
+                            PointerEntered="Nav_PointerEntered" PointerExited="Nav_PointerExited"
+                            Tag="Logs" Tapped="Nav_Tapped">
+                        <TextBlock Text="Logs" FontSize="11" Foreground="#B9BBBE" x:Name="NavLogs"/>
+                    </Border>
+                    <Border Background="Transparent" Padding="12,8" CornerRadius="6" Cursor="Hand"
+                            PointerEntered="Nav_PointerEntered" PointerExited="Nav_PointerExited"
+                            Tag="Settings" Tapped="Nav_Tapped">
+                        <TextBlock Text="Settings" FontSize="11" Foreground="#B9BBBE" x:Name="NavSettings"/>
+                    </Border>
+                    <Border Background="Transparent" Padding="12,8" CornerRadius="6" Cursor="Hand"
+                            PointerEntered="Nav_PointerEntered" PointerExited="Nav_PointerExited"
+                            Tag="About" Tapped="Nav_Tapped">
+                        <TextBlock Text="About" FontSize="11" Foreground="#B9BBBE" x:Name="NavAbout"/>
+                    </Border>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Pages -->
+        <Panel Grid.Column="1" Margin="0">
+            <views:HomePage x:Name="HomePage" IsVisible="True" DataContext="{Binding}"/>
+            <views:ConnectionsPage x:Name="ConnectionsPage" IsVisible="False" DataContext="{Binding}"/>
+            <views:ScriptsPage x:Name="ScriptsPage" IsVisible="False" DataContext="{Binding}"/>
+            <views:LogsPage x:Name="LogsPage" IsVisible="False" DataContext="{Binding}"/>
+            <views:SettingsPage x:Name="SettingsPage" IsVisible="False" DataContext="{Binding}"/>
+            <views:AboutPage x:Name="AboutPage" IsVisible="False" DataContext="{Binding}"/>
+        </Panel>
+    </Grid>
+</Window>

@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GoodRP.Avalonia.Views.ConnectionsPage">
+
+    <Border Background="#1A1A2E" Padding="30,40,30,30">
+        <ScrollViewer>
+            <StackPanel Spacing="16">
+                <TextBlock Text="Discord Application IDs" FontSize="13" FontWeight="Bold" Foreground="White"/>
+
+                <!-- App ID List -->
+                <ListBox ItemsSource="{Binding AppIds}" Background="#28283C" Foreground="White"
+                         Height="150" x:Name="AppIdList">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="White"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Action Buttons -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="Connect" Width="110" Height="32" Background="#5865F2" Foreground="White" CornerRadius="6"
+                            Click="Connect_Click"/>
+                    <Button Content="Remove" Width="90" Height="32" Background="#50505F" Foreground="White" CornerRadius="6"
+                            Click="Remove_Click"/>
+                </StackPanel>
+
+                <!-- Add New -->
+                <TextBlock Text="Add new App ID" FontSize="11" Foreground="#B9BBBE" Margin="0,10,0,0"/>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBox Width="220" Height="30" Watermark="Name (e.g. Spotify RP)" x:Name="TxtName"
+                             Background="#28283C" Foreground="White"/>
+                    <TextBox Width="230" Height="30" Watermark="Discord App ID" x:Name="TxtId"
+                             Background="#28283C" Foreground="White"/>
+                </StackPanel>
+                <Button Content="Add" Width="90" Height="32" Background="#5865F2" Foreground="White" CornerRadius="6"
+                        HorizontalAlignment="Left" Click="Add_Click"/>
+
+                <!-- Status -->
+                <TextBlock Text="{Binding ConnStatusText}" FontSize="10" Foreground="{Binding ConnStatusColor}" Margin="0,10,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GoodRP.Avalonia.Views.ScriptsPage">
+
+    <Border Background="#1A1A2E" Padding="30,40,30,30">
+        <ScrollViewer>
+            <StackPanel Spacing="16">
+                <TextBlock Text="Hooks / Scripts" FontSize="13" FontWeight="Bold" Foreground="White"/>
+
+                <!-- On Media Changed -->
+                <TextBlock Text="On Media Changed" FontSize="11" Foreground="#B9BBBE"/>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <CheckBox x:Name="TglMediaChanged" IsChecked="False" MinWidth="20"/>
+                    <TextBox Width="350" Height="30" Watermark="Path to script..." x:Name="TxtMediaChanged"
+                             Background="#28283C" Foreground="White"/>
+                    <Button Content="Browse" Width="80" Height="30" Background="#50505F" Foreground="White" CornerRadius="6"
+                            Click="BrowseMediaChanged_Click"/>
+                </StackPanel>
+
+                <!-- On Media Stopped -->
+                <TextBlock Text="On Media Stopped" FontSize="11" Foreground="#B9BBBE"/>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <CheckBox x:Name="TglMediaStopped" IsChecked="False" MinWidth="20"/>
+                    <TextBox Width="350" Height="30" Watermark="Path to script..." x:Name="TxtMediaStopped"
+                             Background="#28283C" Foreground="White"/>
+                    <Button Content="Browse" Width="80" Height="30" Background="#50505F" Foreground="White" CornerRadius="6"
+                            Click="BrowseMediaStopped_Click"/>
+                </StackPanel>
+
+                <!-- On Playback State Changed -->
+                <TextBlock Text="On Playback State Changed" FontSize="11" Foreground="#B9BBBE"/>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <CheckBox x:Name="TglStateChanged" IsChecked="False" MinWidth="20"/>
+                    <TextBox Width="350" Height="30" Watermark="Path to script..." x:Name="TxtStateChanged"
+                             Background="#28283C" Foreground="White"/>
+                    <Button Content="Browse" Width="80" Height="30" Background="#50505F" Foreground="White" CornerRadius="6"
+                            Click="BrowseStateChanged_Click"/>
+                </StackPanel>
+
+                <!-- Timeout -->
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+                    <TextBlock Text="Script timeout (ms):" FontSize="11" Foreground="#B9BBBE" VerticalAlignment="Center"/>
+                    <TextBox Width="100" Height="30" Watermark="10000" x:Name="TxtTimeout"
+                             Background="#28283C" Foreground="White"/>
+                </StackPanel>
+
+                <TextBlock Text="Supports .ps1, .py, .bat, .js and the native .grp format.&#10;Toggle a hook off to disable it without removing the path."
+                           FontSize="9" Foreground="#72767D" TextWrapping="Wrap"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

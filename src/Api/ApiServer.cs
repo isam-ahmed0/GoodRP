@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GoodRP.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ namespace GoodRP.Api;
 
 public static class ApiServer
 {
-    public static async Task RunAsync(DiscordManager discordManager, MediaWatcher mediaWatcher, string[] args)
+    public static async Task RunAsync(DiscordManager discordManager, IMediaWatcher mediaWatcher, string[] args)
     {
         var port = "9876";
         var portIdx = Array.IndexOf(args, "--port");
@@ -49,7 +50,7 @@ public static class ApiServer
         await app.RunAsync();
     }
 
-    private static void MapEndpoints(WebApplication app, DiscordManager discord, MediaWatcher watcher)
+    private static void MapEndpoints(WebApplication app, DiscordManager discord, IMediaWatcher watcher)
     {
         app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
@@ -112,8 +113,10 @@ public static class ApiServer
                     AppName = appName ?? media.AppName,
                     State = media.State,
                     Position = media.Position,
-                    Duration = media.Duration,
-                    Thumbnail = media.Thumbnail
+                    Duration = media.Duration
+#if WINDOWS
+                    , Thumbnail = media.Thumbnail
+#endif
                 };
             }
 

@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GoodRP.Avalonia.Views.HomePage">
+
+    <Border Background="#1A1A2E" Padding="30,40,30,30">
+        <StackPanel Spacing="20">
+            <!-- Album Art + Info -->
+            <StackPanel Orientation="Horizontal" Spacing="30">
+                <Border Width="140" Height="140" CornerRadius="12" Background="#16162e" ClipToBounds="True">
+                    <Image Source="{Binding AlbumArtUrl}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Spacing="8" VerticalAlignment="Center" MaxWidth="260">
+                    <TextBlock Text="{Binding MediaTitle}" FontSize="14" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding MediaArtist}" FontSize="11" Foreground="#B9BBBE" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding MediaAlbum}" FontSize="10" Foreground="#72767D" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding HomeStatus}" FontSize="9" Foreground="#72767D" Margin="0,4,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Show / Hide Buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="15" Margin="0,20,0,0">
+                <Button Content="Show on Discord" Width="150" Height="38"
+                        Background="#5865F2" Foreground="White" FontWeight="Bold"
+                        CornerRadius="6" HorizontalContentAlignment="Center"
+                        Click="Show_Click"/>
+                <Button Content="Hide" Width="150" Height="38"
+                        Background="#50505F" Foreground="White" FontWeight="Bold"
+                        CornerRadius="6" HorizontalContentAlignment="Center"
+                        Click="Hide_Click"/>
+            </StackPanel>
+
+            <!-- Hint -->
+            <TextBlock Text="Tip: switch GUIs in config.json (GuiVersion: default / 9xt / avalonia)"
+                       FontSize="9" Foreground="#72767D" Margin="0,40,0,0"/>
+        </StackPanel>
+    </Border>
+</UserControl>

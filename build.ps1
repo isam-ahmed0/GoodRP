@@ -30,7 +30,7 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet build failed" }
 
 # --- 4. Publish (self-contained, single-file, win-x64) ---
 Write-Host "Publishing..."
-dotnet publish src/GoodRP.csproj -c Release -r win-x64 --self-contained true `
+dotnet publish src/GoodRP.csproj -c Release -f net9.0-windows10.0.19041.0 -r win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 

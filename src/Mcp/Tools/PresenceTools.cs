@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using GoodRP.Interfaces;
 using ModelContextProtocol.Server;
 
 namespace GoodRP.Mcp.Tools;
@@ -8,9 +9,9 @@ namespace GoodRP.Mcp.Tools;
 public class PresenceTools
 {
     private readonly DiscordManager _discordManager;
-    private readonly MediaWatcher _mediaWatcher;
+    private readonly IMediaWatcher _mediaWatcher;
 
-    public PresenceTools(DiscordManager discordManager, MediaWatcher mediaWatcher)
+    public PresenceTools(DiscordManager discordManager, IMediaWatcher mediaWatcher)
     {
         _discordManager = discordManager;
         _mediaWatcher = mediaWatcher;
@@ -50,8 +51,10 @@ public class PresenceTools
                 AppName = app_name ?? media.AppName,
                 State = media.State,
                 Position = media.Position,
-                Duration = media.Duration,
-                Thumbnail = media.Thumbnail
+                Duration = media.Duration
+#if WINDOWS
+                , Thumbnail = media.Thumbnail
+#endif
             };
         }
 

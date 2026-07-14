@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GoodRP
+Comment=Lightweight Discord Rich Presence client for media playback
+Exec=GoodRP
+Icon=goodrp
+Categories=AudioVideo;Audio;Utility;
+StartupNotify=false
+Terminal=false

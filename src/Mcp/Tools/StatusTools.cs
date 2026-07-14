@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using GoodRP.Interfaces;
 using ModelContextProtocol.Server;
 
 namespace GoodRP.Mcp.Tools;
@@ -8,9 +9,9 @@ namespace GoodRP.Mcp.Tools;
 public class StatusTools
 {
     private readonly DiscordManager _discordManager;
-    private readonly MediaWatcher _mediaWatcher;
+    private readonly IMediaWatcher _mediaWatcher;
 
-    public StatusTools(DiscordManager discordManager, MediaWatcher mediaWatcher)
+    public StatusTools(DiscordManager discordManager, IMediaWatcher mediaWatcher)
     {
         _discordManager = discordManager;
         _mediaWatcher = mediaWatcher;

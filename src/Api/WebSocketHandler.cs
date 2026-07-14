@@ -2,6 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Collections.Concurrent;
+using GoodRP.Interfaces;
 using Microsoft.AspNetCore.Http;
 
 namespace GoodRP.Api;
@@ -9,10 +10,10 @@ namespace GoodRP.Api;
 public class WebSocketHandler
 {
     private readonly ConcurrentDictionary<string, WebSocket> _clients = new();
-    private readonly MediaWatcher _watcher;
+    private readonly IMediaWatcher _watcher;
     private readonly DiscordManager _discord;
 
-    public WebSocketHandler(MediaWatcher watcher, DiscordManager discord)
+    public WebSocketHandler(IMediaWatcher watcher, DiscordManager discord)
     {
         _watcher = watcher;
         _discord = discord;

@@ -972,8 +972,7 @@ public class ModernMainForm : Form
         return Icon.FromHandle(bitmap.GetHicon());
     }
 
-    private static bool IsDiscordCdnUrl(string url) =>
-        url.Contains("discordapp.com") || url.Contains("discordapp.net");
+    private static bool IsDiscordCdnUrl(string url) => Utilities.UrlHelper.IsDiscordCdnUrl(url);
 
     #endregion
 

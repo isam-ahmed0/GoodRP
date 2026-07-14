@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GoodRP.Avalonia.Views.AboutPage">
+
+    <Border Background="#1A1A2E" Padding="30,40,30,30">
+        <StackPanel Spacing="14">
+            <TextBlock Text="9XT" FontSize="32" FontWeight="Bold" Foreground="White"/>
+            <TextBlock Text="Modern control panel for GoodRP" FontSize="12" Foreground="#B9BBBE"/>
+            <TextBlock Text="GoodRP v1.0.1" FontSize="11" Foreground="#72767D"/>
+
+            <TextBlock Text="Cross-platform Avalonia GUI for Discord Rich Presence media detection."
+                       FontSize="10" Foreground="#72767D" TextWrapping="Wrap" Margin="0,10,0,0"/>
+
+            <Button Content="Check for updates" Width="180" Height="38" Background="#5865F2" Foreground="White"
+                    CornerRadius="6" HorizontalAlignment="Left" Click="CheckUpdate_Click" x:Name="BtnCheckUpdate"/>
+
+            <TextBlock x:Name="UpdateStatus" Text="" FontSize="10" Foreground="#72767D"/>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -2,12 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFrameworks>net9.0-windows10.0.19041.0;net9.0</TargetFrameworks>
+    <RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net9.0'">linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <UseWindowsForms Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationManifest>..\app.manifest</ApplicationManifest>
-    <ApplicationIcon>..\GoodRP.ico</ApplicationIcon>
+    <ApplicationManifest Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">..\app.manifest</ApplicationManifest>
+    <ApplicationIcon Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">..\GoodRP.ico</ApplicationIcon>
     <AssemblyName>GoodRP</AssemblyName>
     <RootNamespace>GoodRP</RootNamespace>
     <Version>1.0.1</Version>
@@ -15,18 +16,41 @@
     <Description>Lightweight Discord Rich Presence client for media playback</Description>
   </PropertyGroup>
 
+  <!-- Cross-platform packages -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
+    <PackageReference Include="Avalonia" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" Condition="'$(TargetFramework)' == 'net9.0'" />
+  </ItemGroup>
+
+  <!-- Windows-only: DiscordRPC local DLL -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">
     <Reference Include="DiscordRPC">
       <HintPath>..\Discord-CustomRP-master\CustomRPC\DiscordRPC.dll</HintPath>
     </Reference>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <!-- Exclude Windows-only files from cross-platform (net9.0) build -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <Compile Remove="MainForm.cs" />
+    <Compile Remove="MainForm.Designer.cs" />
+    <Compile Remove="ModernMainForm.cs" />
+    <Compile Remove="ModernMainForm.Designer.cs" />
+    <Compile Remove="SettingsForm.cs" />
+    <Compile Remove="TrayIcon.cs" />
+    <Compile Remove="ScrollViewer.cs" />
+    <Compile Remove="ModernScrollBar.cs" />
+    <Compile Remove="HotkeyManager.cs" />
+    <Compile Remove="NativeMethods.cs" />
+    <Compile Remove="MediaWatcher.cs" />
+    <Compile Remove="ImageUploader.cs" />
+    <Compile Remove="GraphicsExtensions.cs" />
   </ItemGroup>
 
 </Project>
-

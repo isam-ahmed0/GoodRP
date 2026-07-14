@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
@@ -7,6 +8,7 @@ namespace GoodRP;
 
 public static class GrpExecutor
 {
+    private static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     public static async Task RunAsync(GrpScript script, MediaInfo media, string? imageUrl)
     {
         if (!string.IsNullOrEmpty(script.WebhookUrl))
@@ -115,9 +117,9 @@ public static class GrpExecutor
 
         var (fileName, args) = script.Language switch
         {
-            "ps1" => ("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{tempFile}\""),
-            "py" => ("python", $"\"{tempFile}\""),
-            "bat" => ("cmd.exe", $"/c \"{tempFile}\""),
+            "ps1" => (IsWindows ? "powershell.exe" : "pwsh", $"-NoProfile -ExecutionPolicy Bypass -File \"{tempFile}\""),
+            "py" => (IsWindows ? "python" : "python3", $"\"{tempFile}\""),
+            "bat" => (IsWindows ? "cmd.exe" : "sh", IsWindows ? $"/c \"{tempFile}\"" : $"-c \"{tempFile}\""),
             "js" => ("node", $"\"{tempFile}\""),
             _ => throw new NotSupportedException($"Language '{script.Language}' is not supported")
         };

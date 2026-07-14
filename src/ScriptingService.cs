@@ -1,9 +1,33 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace GoodRP;
 
 public static class ScriptingService
 {
+    private static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+    private static string GetScriptRunner(string scriptPath)
+    {
+        var ext = Path.GetExtension(scriptPath).ToLowerInvariant();
+        return ext switch
+        {
+            ".ps1" => IsWindows ? "powershell.exe" : "pwsh",
+            ".py" => IsWindows ? "python" : "python3",
+            ".bat" => IsWindows ? "cmd.exe" : "sh",
+            ".js" => "node",
+            _ => scriptPath
+        };
+    }
+
+    private static string GetScriptArgs(string scriptPath)
+    {
+        var ext = Path.GetExtension(scriptPath).ToLowerInvariant();
+        if (ext == ".bat" && !IsWindows)
+            return $"-c \"{scriptPath}\"";
+        return $"\"{scriptPath}\"";
+    }
+
     public static void RunScript(string? scriptPath, MediaInfo media, MediaPlaybackState? state = null, string? imageUrl = null)
     {
         if (string.IsNullOrWhiteSpace(scriptPath))
@@ -30,12 +54,15 @@ public static class ScriptingService
         {
             try
             {
+                var runner = GetScriptRunner(scriptPath);
+                var args = GetScriptArgs(scriptPath);
 
                 using var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = scriptPath!,
+                        FileName = runner,
+                        Arguments = args,
                         UseShellExecute = false,
                         CreateNoWindow = true,
                         RedirectStandardOutput = false,
@@ -81,11 +108,15 @@ public static class ScriptingService
         {
             try
             {
+                var runner = GetScriptRunner(scriptPath);
+                var args = GetScriptArgs(scriptPath);
+
                 using var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = scriptPath!,
+                        FileName = runner,
+                        Arguments = args,
                         UseShellExecute = false,
                         CreateNoWindow = true
                     }

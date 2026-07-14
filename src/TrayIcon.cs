@@ -90,7 +90,7 @@ public class TrayIcon : IDisposable
 
             imageUrl ??= await ImageUploader.UploadThumbnailAsync(media.Thumbnail, cacheKey);
 
-            if (imageUrl != null && MainForm.IsDiscordCdnUrl(imageUrl))
+            if (imageUrl != null && Utilities.UrlHelper.IsDiscordCdnUrl(imageUrl))
                 imageUrl = null;
 
             ImageUploader.TrimCache();

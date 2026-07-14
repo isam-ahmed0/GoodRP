@@ -112,7 +112,6 @@ public class DiscordManager : IDisposable
 
             var presence = new RichPresence
             {
-                Name = title,
                 Type = activityType,
                 Details = title,
                 State = state,

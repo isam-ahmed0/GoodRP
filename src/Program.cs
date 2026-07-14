@@ -1,12 +1,14 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using GoodRP.Api;
+using GoodRP.Interfaces;
 using GoodRP.Mcp;
 
 namespace GoodRP;
 
 static class Program
 {
-    private static MediaWatcher? _mediaWatcher;
+    private static IMediaWatcher? _mediaWatcher;
     private static DiscordManager? _discordManager;
 
     [STAThread]
@@ -21,6 +23,16 @@ static class Program
             return;
         }
 
+        var guiVersion = ConfigManager.Config.GuiVersion?.ToLowerInvariant() ?? "default";
+        var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        if (!isWindows || guiVersion == "avalonia")
+        {
+            Avalonia.AvaloniaProgram.Launch(args);
+            return;
+        }
+
+#if WINDOWS
         using var mutex = new Mutex(true, "GoodRP_SingleInstance", out bool createdNew);
         if (!createdNew)
         {
@@ -45,16 +57,18 @@ static class Program
             }
         }
 
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        System.Windows.Forms.Application.EnableVisualStyles();
+        System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+        System.Windows.Forms.Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
         _discordManager = new DiscordManager();
-        _mediaWatcher = new MediaWatcher();
+        _mediaWatcher = MediaWatcherFactory.Create();
+
+        var winMediaWatcher = _mediaWatcher as MediaWatcher;
 
         Form mainForm = string.Equals(ConfigManager.Config.GuiVersion, "9xt", StringComparison.OrdinalIgnoreCase)
-            ? new ModernMainForm(_mediaWatcher, _discordManager)
-            : new MainForm(_mediaWatcher, _discordManager);
+            ? new ModernMainForm(winMediaWatcher!, _discordManager)
+            : new MainForm(winMediaWatcher!, _discordManager);
 
         LogService.Log("App", "GoodRP started");
 
@@ -65,10 +79,11 @@ static class Program
             _discordManager.Connect(ConfigManager.Config.DiscordClientId);
         }
 
-        Application.Run(mainForm);
+        System.Windows.Forms.Application.Run(mainForm);
 
         _mediaWatcher?.Dispose();
         _discordManager?.Dispose();
+#endif
     }
 
     static async Task RunHeadlessMode(string[] args, bool mcpMode, bool apiMode)
@@ -76,7 +91,7 @@ static class Program
         Console.Error.WriteLine("[GoodRP] Starting headless mode...");
 
         _discordManager = new DiscordManager();
-        _mediaWatcher = new MediaWatcher();
+        _mediaWatcher = MediaWatcherFactory.Create();
 
         await _mediaWatcher.StartAsync();
 

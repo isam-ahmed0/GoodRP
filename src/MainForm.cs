@@ -799,10 +799,7 @@ public class MainForm : Form
         return Icon.FromHandle(bitmap.GetHicon());
     }
 
-    public static bool IsDiscordCdnUrl(string url)
-    {
-        return url.Contains("discordapp.com") || url.Contains("discordapp.net");
-    }
+    public static bool IsDiscordCdnUrl(string url) => Utilities.UrlHelper.IsDiscordCdnUrl(url);
 }
 
 public static class GraphicsExtensions

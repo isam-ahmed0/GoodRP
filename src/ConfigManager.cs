@@ -4,7 +4,7 @@ namespace GoodRP;
 
 public class AppConfig
 {
-    // GUI version: "default" (MainForm) | "9xt" (ModernMainForm)
+    // GUI version: "default" (MainForm) | "9xt" (ModernMainForm) | "avalonia" (Cross-platform)
     public string GuiVersion { get; set; } = "default";
 
     public string DiscordClientId { get; set; } = "";

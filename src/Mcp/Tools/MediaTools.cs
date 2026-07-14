@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using GoodRP.Interfaces;
 using ModelContextProtocol.Server;
 
 namespace GoodRP.Mcp.Tools;
@@ -7,9 +8,9 @@ namespace GoodRP.Mcp.Tools;
 [McpServerToolType]
 public class MediaTools
 {
-    private readonly MediaWatcher _mediaWatcher;
+    private readonly IMediaWatcher _mediaWatcher;
 
-    public MediaTools(MediaWatcher mediaWatcher)
+    public MediaTools(IMediaWatcher mediaWatcher)
     {
         _mediaWatcher = mediaWatcher;
     }
