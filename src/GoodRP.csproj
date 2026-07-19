@@ -9,6 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">..\app.manifest</ApplicationManifest>
     <ApplicationIcon Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">..\GoodRP.ico</ApplicationIcon>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>GoodRP</AssemblyName>
     <RootNamespace>GoodRP</RootNamespace>
     <Version>1.0.1</Version>
@@ -21,12 +22,13 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
-    <PackageReference Include="Avalonia" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
+    <PackageReference Include="Avalonia" Version="11.3.14" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.14" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.14" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" Condition="'$(TargetFramework)' == 'net9.0'" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
   </ItemGroup>
 
   <!-- Windows-only: DiscordRPC local DLL -->
@@ -51,6 +53,12 @@
     <Compile Remove="MediaWatcher.cs" />
     <Compile Remove="ImageUploader.cs" />
     <Compile Remove="GraphicsExtensions.cs" />
+  </ItemGroup>
+
+  <!-- Exclude non-Windows files from Windows build -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.19041.0'">
+    <Compile Remove="Linux\LinuxMediaWatcher.cs" />
+    <Compile Remove="Macos\MacosMediaWatcher.cs" />
   </ItemGroup>
 
 </Project>

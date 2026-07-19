@@ -1,13 +1,10 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text.Json;
+using Tmds.DBus.Protocol;
 using GoodRP.Interfaces;
 
 namespace GoodRP.Linux;
 
 public class LinuxMediaWatcher : IMediaWatcher
 {
-    private readonly List<string> _knownPlayers = new();
     private System.Timers.Timer? _pollTimer;
     private bool _disposed;
 
@@ -21,18 +18,18 @@ public class LinuxMediaWatcher : IMediaWatcher
     public Task StartAsync()
     {
         _pollTimer = new System.Timers.Timer(1000);
-        _pollTimer.Elapsed += (_, _) => PollPlayers();
+        _pollTimer.Elapsed += async (_, _) => await PollPlayersAsync();
         _pollTimer.Start();
 
-        PollPlayers();
+        _ = PollPlayersAsync();
         return Task.CompletedTask;
     }
 
-    private void PollPlayers()
+    private async Task PollPlayersAsync()
     {
         try
         {
-            var players = GetMprisPlayers();
+            var players = await GetMprisPlayersAsync();
 
             var playingPlayer = players.FirstOrDefault(p => p.Status == "Playing")
                                 ?? players.FirstOrDefault(p => p.Status == "Paused");
@@ -86,72 +83,98 @@ public class LinuxMediaWatcher : IMediaWatcher
         return busName.Replace("org.mpris.MediaPlayer2.", "");
     }
 
-    private static List<MprisPlayerInfo> GetMprisPlayers()
+    private static async Task<List<MprisPlayerInfo>> GetMprisPlayersAsync()
     {
         var players = new List<MprisPlayerInfo>();
 
         try
         {
-            var output = RunCommand("dbus-send", "--session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames");
-            if (string.IsNullOrEmpty(output)) return players;
+            var connection = new DBusConnection(DBusAddress.Session!);
+            await connection.ConnectAsync();
 
-            var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
+            string[] busNames = await ListNamesAsync(connection);
+
+            foreach (var busName in busNames)
             {
-                var trimmed = line.Trim().Trim('"');
-                if (!trimmed.StartsWith("org.mpris.MediaPlayer2.")) continue;
+                if (!busName.StartsWith("org.mpris.MediaPlayer2.")) continue;
 
-                var info = GetPlayerInfo(trimmed);
+                var info = await GetPlayerInfoAsync(connection, busName);
                 if (info != null)
                     players.Add(info);
             }
+
+            connection.Dispose();
         }
         catch { }
 
         return players;
     }
 
-    private static MprisPlayerInfo? GetPlayerInfo(string busName)
+    private static MessageBuffer BuildListNamesCall(DBusConnection connection)
+    {
+        using var writer = connection.GetMessageWriter();
+        writer.WriteMethodCallHeader(
+            destination: "org.freedesktop.DBus",
+            path: "/org/freedesktop/DBus",
+            @interface: "org.freedesktop.DBus",
+            member: "ListNames");
+        return writer.CreateMessage();
+    }
+
+    private static MessageBuffer BuildPropertyGetCall(DBusConnection connection, string busName, string property)
+    {
+        using var writer = connection.GetMessageWriter();
+        writer.WriteMethodCallHeader(
+            destination: busName,
+            path: "/org/mpris/MediaPlayer2",
+            @interface: "org.freedesktop.DBus.Properties",
+            signature: "ss",
+            member: "Get");
+        writer.WriteString("org.mpris.MediaPlayer2.Player");
+        writer.WriteString(property);
+        return writer.CreateMessage();
+    }
+
+    private static async Task<string[]> ListNamesAsync(DBusConnection connection)
+    {
+        var msg = BuildListNamesCall(connection);
+
+        return await connection.CallMethodAsync(
+            msg,
+            (Message message, object? state) =>
+            {
+                var reader = message.GetBodyReader();
+                var names = new List<string>();
+                var arrayEnd = reader.ReadArrayStart(DBusType.String);
+                while (reader.HasNext(arrayEnd))
+                {
+                    names.Add(reader.ReadString());
+                }
+                return names.ToArray();
+            });
+    }
+
+    private static async Task<MprisPlayerInfo?> GetPlayerInfoAsync(DBusConnection connection, string busName)
     {
         try
         {
-            var escaped = busName.Replace(".", "_").Replace("/", "_");
-
-            var status = RunCommand("dbus-send",
-                $"--session --dest={busName} --type=method_call --print-reply " +
-                $"/org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get " +
-                $"string:org.mpris.MediaPlayer2.Player string:PlaybackStatus");
-
-            var playbackStatus = ExtractDBusString(status);
-
-            var metadata = RunCommand("dbus-send",
-                $"--session --dest={busName} --type=method_call --print-reply " +
-                $"/org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get " +
-                $"string:org.mpris.MediaPlayer2.Player string:Metadata");
-
-            var metaDict = ParseMetadata(metadata);
-
-            var positionReply = RunCommand("dbus-send",
-                $"--session --dest={busName} --type=method_call --print-reply " +
-                $"/org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get " +
-                $"string:org.mpris.MediaPlayer2.Player string:Position");
-
-            var positionUs = ExtractDBusLong(positionReply);
-            var position = TimeSpan.FromTicks(positionUs * 10); // microseconds to TimeSpan
+            var status = await GetPropertyStringAsync(connection, busName, "PlaybackStatus");
+            var metadata = await GetMetadataAsync(connection, busName);
+            var positionUs = await GetPropertyLongAsync(connection, busName, "Position");
 
             var durationUs = 0L;
-            if (metaDict.TryGetValue("mpris:length", out var lengthStr) && long.TryParse(lengthStr, out var len))
+            if (metadata.TryGetValue("mpris:length", out var lengthStr) && long.TryParse(lengthStr, out var len))
                 durationUs = len;
 
             return new MprisPlayerInfo
             {
                 BusName = busName,
-                Status = playbackStatus ?? "Stopped",
-                Title = metaDict.TryGetValue("xesam:title", out var t) ? t : null,
-                Artist = metaDict.TryGetValue("xesam:artist", out var a) ? a : null,
-                Album = metaDict.TryGetValue("xesam:album", out var al) ? al : null,
-                ArtUrl = metaDict.TryGetValue("mpris:artUrl", out var art) ? art : null,
-                Position = position,
+                Status = status ?? "Stopped",
+                Title = metadata.TryGetValue("xesam:title", out var t) ? t : null,
+                Artist = metadata.TryGetValue("xesam:artist", out var a) ? a : null,
+                Album = metadata.TryGetValue("xesam:album", out var al) ? al : null,
+                ArtUrl = metadata.TryGetValue("mpris:artUrl", out var art) ? art : null,
+                Position = TimeSpan.FromTicks(positionUs * 10),
                 Duration = TimeSpan.FromTicks(durationUs * 10)
             };
         }
@@ -161,87 +184,75 @@ public class LinuxMediaWatcher : IMediaWatcher
         }
     }
 
-    private static Dictionary<string, string> ParseMetadata(string? dbusOutput)
-    {
-        var result = new Dictionary<string, string>();
-        if (string.IsNullOrEmpty(dbusOutput)) return result;
-
-        var lines = dbusOutput.Split('\n');
-        foreach (var line in lines)
-        {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("string \""))
-            {
-                var value = trimmed.Substring(8, trimmed.Length - 9);
-                var eqIndex = value.IndexOf('=');
-                if (eqIndex > 0)
-                {
-                    var key = value[..eqIndex].Trim();
-                    var val = value[(eqIndex + 1)..].Trim();
-                    result[key] = val;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private static string? ExtractDBusString(string? output)
-    {
-        if (string.IsNullOrEmpty(output)) return null;
-
-        foreach (var line in output.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("string \""))
-            {
-                return trimmed.Substring(8, trimmed.Length - 9);
-            }
-        }
-        return null;
-    }
-
-    private static long ExtractDBusLong(string? output)
-    {
-        if (string.IsNullOrEmpty(output)) return 0;
-
-        foreach (var line in output.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.StartsWith("int64 "))
-            {
-                if (long.TryParse(trimmed.Substring(6), out var val))
-                    return val;
-            }
-        }
-        return 0;
-    }
-
-    private static string? RunCommand(string command, string args)
+    private static async Task<string?> GetPropertyStringAsync(DBusConnection connection, string busName, string property)
     {
         try
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = command,
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            var msg = BuildPropertyGetCall(connection, busName, property);
 
-            using var process = Process.Start(psi);
-            if (process == null) return null;
-
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(2000);
-            return output;
+            return await connection.CallMethodAsync(
+                msg,
+                (Message message, object? state) =>
+                {
+                    var reader = message.GetBodyReader();
+                    var variant = reader.ReadVariantValue();
+                    return variant.GetString();
+                });
         }
-        catch
+        catch { return null; }
+    }
+
+    private static async Task<long> GetPropertyLongAsync(DBusConnection connection, string busName, string property)
+    {
+        try
         {
-            return null;
+            var msg = BuildPropertyGetCall(connection, busName, property);
+
+            return await connection.CallMethodAsync(
+                msg,
+                (Message message, object? state) =>
+                {
+                    var reader = message.GetBodyReader();
+                    var variant = reader.ReadVariantValue();
+                    return variant.GetInt64();
+                });
         }
+        catch { return 0; }
+    }
+
+    private static async Task<Dictionary<string, string>> GetMetadataAsync(DBusConnection connection, string busName)
+    {
+        var result = new Dictionary<string, string>();
+
+        try
+        {
+            var msg = BuildPropertyGetCall(connection, busName, "Metadata");
+
+            var dict = await connection.CallMethodAsync(
+                msg,
+                (Message message, object? state) =>
+                {
+                    var reader = message.GetBodyReader();
+                    var variant = reader.ReadVariantValue();
+                    return variant.GetDictionary<string, VariantValue>();
+                });
+
+            foreach (var kvp in dict)
+            {
+                var val = kvp.Value;
+                result[kvp.Key] = val.Type switch
+                {
+                    VariantValueType.String => val.GetString() ?? "",
+                    VariantValueType.Int32 => val.GetInt32().ToString(),
+                    VariantValueType.Int64 => val.GetInt64().ToString(),
+                    VariantValueType.Byte => val.GetByte().ToString(),
+                    _ => val.ToString() ?? ""
+                };
+            }
+        }
+        catch { }
+
+        return result;
     }
 
     public void Dispose()

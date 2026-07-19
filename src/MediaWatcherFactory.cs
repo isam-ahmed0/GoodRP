@@ -8,19 +8,14 @@ public static class MediaWatcherFactory
     public static IMediaWatcher Create()
     {
 #if WINDOWS
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return new MediaWatcher();
-#endif
-
+        return new MediaWatcher();
+#else
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             return new Linux.LinuxMediaWatcher();
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             return new Macos.MacosMediaWatcher();
 
-#if WINDOWS
-        return new MediaWatcher();
-#else
         return new Linux.LinuxMediaWatcher();
 #endif
     }

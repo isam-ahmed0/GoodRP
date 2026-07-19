@@ -32,8 +32,8 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 Write-Host "Binary published to: publish/macos-$Arch/GoodRP"
 
 # --- 4. DMG packaging (macOS only) ---
-$isMacOS = $PSVersionTable.PSEdition -eq "Core" -and $IsMacOS
-if (-not $isMacOS) {
+$canRunMac = (Get-Command chmod -ErrorAction SilentlyContinue) -and (Get-Command hdiutil -ErrorAction SilentlyContinue)
+if (-not $canRunMac) {
     Write-Host ""
     Write-Host "=== Cross-compile complete ===" -ForegroundColor Green
     Write-Host "Binary: publish/macos-$Arch/GoodRP"
