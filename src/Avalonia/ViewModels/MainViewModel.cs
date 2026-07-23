@@ -181,23 +181,35 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private async Task FetchAlbumArtAsync(MediaInfo media)
     {
-        if (!ConfigManager.Config.ShowAlbumArt) return;
+        if (ConfigManager.Config.AutoShowOnDiscord)
+            _discordManager.SetPresence(media, null);
 
         string? imageUrl = null;
 
-        if (ConfigManager.Config.EnableArtFinder)
-            imageUrl = await ArtFinderService.FindArtAsync(media.Title, media.Artist, media.Album);
+        try
+        {
+            if (ConfigManager.Config.ShowAlbumArt)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                if (ConfigManager.Config.EnableArtFinder)
+                    imageUrl = await ArtFinderService.FindArtAsync(media.Title, media.Artist, media.Album);
 
 #if WINDOWS
-        imageUrl ??= await ImageUploader.UploadThumbnailAsync(media.Thumbnail, $"{media.Title}_{media.Artist}");
+                imageUrl ??= await ImageUploader.UploadThumbnailAsync(media.Thumbnail, $"{media.Title}_{media.Artist}");
 #endif
 
-        if (imageUrl != null && Utilities.UrlHelper.IsDiscordCdnUrl(imageUrl))
-            imageUrl = null;
+                if (imageUrl != null && Utilities.UrlHelper.IsDiscordCdnUrl(imageUrl))
+                    imageUrl = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.Log("ArtFinder", $"Failed: {ex.Message}");
+        }
 
         _pendingImageUrl = imageUrl;
 
-        if (ConfigManager.Config.AutoShowOnDiscord)
+        if (imageUrl != null && ConfigManager.Config.AutoShowOnDiscord)
             _discordManager.SetPresence(media, imageUrl);
 
         AlbumArtUrl = imageUrl;
@@ -278,6 +290,10 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public void ConnectSelectedAppId(DiscordAppEntry entry)
     {
+        var index = ConfigManager.Config.DiscordAppIds.IndexOf(entry);
+        if (index >= 0)
+            ConfigManager.Config.ActiveAppIdIndex = index;
+
         ConfigManager.Config.DiscordClientId = entry.Id;
         ConfigManager.Save();
         _discordManager.Disconnect();
@@ -303,6 +319,8 @@ public class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         if (index < 0 || index >= ConfigManager.Config.DiscordAppIds.Count) return;
         ConfigManager.Config.DiscordAppIds.RemoveAt(index);
+        if (ConfigManager.Config.ActiveAppIdIndex >= ConfigManager.Config.DiscordAppIds.Count)
+            ConfigManager.Config.ActiveAppIdIndex = Math.Max(0, ConfigManager.Config.DiscordAppIds.Count - 1);
         ConfigManager.Save();
         RefreshAppIds();
     }
